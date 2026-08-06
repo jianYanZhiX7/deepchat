@@ -2,9 +2,11 @@ import { z } from 'zod'
 import { EntityIdSchema, defineRouteContract } from '../common'
 import type { OpenAICodexAuthStatus } from '../../types/openai-codex'
 import type { XaiGrokAuthStatus } from '../../types/xai-grok'
+import type { AigotokenAuthStatus } from '../../types/aigotoken'
 
 export type { OpenAICodexAuthStatus } from '../../types/openai-codex'
 export type { XaiGrokAuthStatus } from '../../types/xai-grok'
+export type { AigotokenAuthStatus } from '../../types/aigotoken'
 
 const OAuthProviderIdSchema = EntityIdSchema
 
@@ -42,6 +44,16 @@ export const XaiGrokAuthStatusSchema: z.ZodType<XaiGrokAuthStatus> = z.object({
 
 const XaiGrokStatusResultSchema = z.object({
   status: XaiGrokAuthStatusSchema
+})
+
+export const AigotokenAuthStatusSchema: z.ZodType<AigotokenAuthStatus> = z.object({
+  state: z.enum(['signed-out', 'pending-browser', 'authenticated', 'error']),
+  authenticated: z.boolean(),
+  error: z.string().optional()
+})
+
+const AigotokenStatusResultSchema = z.object({
+  status: AigotokenAuthStatusSchema
 })
 
 export const oauthGithubCopilotStartLoginRoute = defineRouteContract({
@@ -114,4 +126,36 @@ export const oauthXaiGrokLogoutRoute = defineRouteContract({
   name: 'oauth.xaiGrok.logout',
   input: z.object({}),
   output: XaiGrokStatusResultSchema
+})
+
+export const oauthAigotokenGetStatusRoute = defineRouteContract({
+  name: 'oauth.aigotoken.getStatus',
+  input: z.object({}),
+  output: AigotokenStatusResultSchema
+})
+
+export const oauthAigotokenStartBrowserLoginRoute = defineRouteContract({
+  name: 'oauth.aigotoken.startBrowserLogin',
+  input: z.object({}),
+  output: AigotokenStatusResultSchema
+})
+
+export const oauthAigotokenCompleteBrowserLoginFromUrlRoute = defineRouteContract({
+  name: 'oauth.aigotoken.completeBrowserLoginFromUrl',
+  input: z.object({
+    callbackUrl: z.string().url()
+  }),
+  output: AigotokenStatusResultSchema
+})
+
+export const oauthAigotokenCancelLoginRoute = defineRouteContract({
+  name: 'oauth.aigotoken.cancelLogin',
+  input: z.object({}),
+  output: AigotokenStatusResultSchema
+})
+
+export const oauthAigotokenLogoutRoute = defineRouteContract({
+  name: 'oauth.aigotoken.logout',
+  input: z.object({}),
+  output: AigotokenStatusResultSchema
 })

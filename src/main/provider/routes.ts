@@ -38,6 +38,11 @@ import {
   oauthXaiGrokGetStatusRoute,
   oauthXaiGrokLogoutRoute,
   oauthXaiGrokStartDeviceLoginRoute,
+  oauthAigotokenGetStatusRoute,
+  oauthAigotokenStartBrowserLoginRoute,
+  oauthAigotokenCompleteBrowserLoginFromUrlRoute,
+  oauthAigotokenCancelLoginRoute,
+  oauthAigotokenLogoutRoute,
   providersAddRoute,
   providersGetAcpProcessConfigOptionsRoute,
   providersGetEmbeddingDimensionsRoute,
@@ -767,6 +772,51 @@ export function createProviderRoutes(deps: {
         oauthXaiGrokLogoutRoute.input.parse(rawInput)
         return oauthXaiGrokLogoutRoute.output.parse({
           status: await oauthService.logoutXaiGrok()
+        })
+      }
+    ],
+    [
+      oauthAigotokenGetStatusRoute.name,
+      async (rawInput) => {
+        oauthAigotokenGetStatusRoute.input.parse(rawInput)
+        return oauthAigotokenGetStatusRoute.output.parse({
+          status: await oauthService.getAigotokenStatus()
+        })
+      }
+    ],
+    [
+      oauthAigotokenStartBrowserLoginRoute.name,
+      async (rawInput) => {
+        oauthAigotokenStartBrowserLoginRoute.input.parse(rawInput)
+        return oauthAigotokenStartBrowserLoginRoute.output.parse({
+          status: await oauthService.startAigotokenBrowserLogin()
+        })
+      }
+    ],
+    [
+      oauthAigotokenCompleteBrowserLoginFromUrlRoute.name,
+      async (rawInput) => {
+        const input = oauthAigotokenCompleteBrowserLoginFromUrlRoute.input.parse(rawInput)
+        return oauthAigotokenCompleteBrowserLoginFromUrlRoute.output.parse({
+          status: await oauthService.completeAigotokenBrowserLoginFromUrl(input.callbackUrl)
+        })
+      }
+    ],
+    [
+      oauthAigotokenCancelLoginRoute.name,
+      async (rawInput) => {
+        oauthAigotokenCancelLoginRoute.input.parse(rawInput)
+        return oauthAigotokenCancelLoginRoute.output.parse({
+          status: await oauthService.cancelAigotokenLogin()
+        })
+      }
+    ],
+    [
+      oauthAigotokenLogoutRoute.name,
+      async (rawInput) => {
+        oauthAigotokenLogoutRoute.input.parse(rawInput)
+        return oauthAigotokenLogoutRoute.output.parse({
+          status: await oauthService.logoutAigotoken()
         })
       }
     ]

@@ -1,5 +1,6 @@
 import type { OpenAICodexAuthStatus } from './openai-codex'
 import type { XaiGrokAuthStatus } from './xai-grok'
+import type { AigotokenAuthStatus } from './aigotoken'
 
 export interface OAuthConfig {
   authUrl: string
@@ -23,4 +24,9 @@ export interface OAuthServicePort {
   startXaiGrokDeviceLogin(): Promise<XaiGrokAuthStatus>
   cancelXaiGrokLogin(): Promise<XaiGrokAuthStatus>
   logoutXaiGrok(): Promise<XaiGrokAuthStatus>
+  getAigotokenStatus(): Promise<AigotokenAuthStatus>
+  startAigotokenBrowserLogin(): Promise<AigotokenAuthStatus>
+  completeAigotokenBrowserLoginFromUrl(callbackUrl: string): Promise<AigotokenAuthStatus>
+  cancelAigotokenLogin(): Promise<AigotokenAuthStatus>
+  logoutAigotoken(): Promise<AigotokenAuthStatus>
 }

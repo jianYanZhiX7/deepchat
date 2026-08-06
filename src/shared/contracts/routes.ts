@@ -286,6 +286,11 @@ import {
 import {
   oauthGithubCopilotStartDeviceFlowLoginRoute,
   oauthGithubCopilotStartLoginRoute,
+  oauthAigotokenCancelLoginRoute,
+  oauthAigotokenCompleteBrowserLoginFromUrlRoute,
+  oauthAigotokenGetStatusRoute,
+  oauthAigotokenLogoutRoute,
+  oauthAigotokenStartBrowserLoginRoute,
   oauthOpenAICodexCancelLoginRoute,
   oauthOpenAICodexCompleteBrowserLoginFromUrlRoute,
   oauthOpenAICodexGetStatusRoute,
@@ -646,6 +651,12 @@ const DEEPCHAT_ROUTE_CATALOG_PART_1 = {
   [nowledgeMemTestConnectionRoute.name]: nowledgeMemTestConnectionRoute,
   [oauthGithubCopilotStartLoginRoute.name]: oauthGithubCopilotStartLoginRoute,
   [oauthGithubCopilotStartDeviceFlowLoginRoute.name]: oauthGithubCopilotStartDeviceFlowLoginRoute,
+  [oauthAigotokenGetStatusRoute.name]: oauthAigotokenGetStatusRoute,
+  [oauthAigotokenStartBrowserLoginRoute.name]: oauthAigotokenStartBrowserLoginRoute,
+  [oauthAigotokenCompleteBrowserLoginFromUrlRoute.name]:
+    oauthAigotokenCompleteBrowserLoginFromUrlRoute,
+  [oauthAigotokenCancelLoginRoute.name]: oauthAigotokenCancelLoginRoute,
+  [oauthAigotokenLogoutRoute.name]: oauthAigotokenLogoutRoute,
   [oauthOpenAICodexGetStatusRoute.name]: oauthOpenAICodexGetStatusRoute,
   [oauthOpenAICodexStartBrowserLoginRoute.name]: oauthOpenAICodexStartBrowserLoginRoute,
   [oauthOpenAICodexCompleteBrowserLoginFromUrlRoute.name]:

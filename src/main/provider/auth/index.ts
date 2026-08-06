@@ -7,8 +7,10 @@ import { createGitHubCopilotOAuth } from './githubCopilotOAuth'
 import { getGlobalGitHubCopilotDeviceFlow } from './githubCopilotDeviceFlow'
 import { getGlobalOpenAICodexAuth, initializeGlobalOpenAICodexAuth } from './openaiCodex'
 import { getGlobalXaiGrokAuth, initializeGlobalXaiGrokAuth } from './xaiGrok'
+import { getGlobalAigotokenAuth, initializeGlobalAigotokenAuth } from './aigotoken'
 import type { OpenAICodexAuthStatus } from '@shared/types/openai-codex'
 import type { XaiGrokAuthStatus } from '@shared/types/xai-grok'
+import type { AigotokenAuthStatus } from '@shared/types/aigotoken'
 import type { DeepchatEventPublisher } from '@shared/contracts/events'
 
 import type { OAuthConfig, OAuthServicePort } from '@shared/types/oauth'
@@ -27,6 +29,7 @@ export class OAuthService implements OAuthServicePort {
   ) {
     initializeGlobalOpenAICodexAuth(publishEvent)
     initializeGlobalXaiGrokAuth(publishEvent)
+    initializeGlobalAigotokenAuth(providerSettings, publishEvent)
   }
 
   /**
@@ -126,6 +129,28 @@ export class OAuthService implements OAuthServicePort {
 
   async logoutXaiGrok(): Promise<XaiGrokAuthStatus> {
     return getGlobalXaiGrokAuth().logout()
+  }
+
+  async getAigotokenStatus(): Promise<AigotokenAuthStatus> {
+    return getGlobalAigotokenAuth().getStatus()
+  }
+
+  async startAigotokenBrowserLogin(): Promise<AigotokenAuthStatus> {
+    return getGlobalAigotokenAuth().startBrowserLogin()
+  }
+
+  async completeAigotokenBrowserLoginFromUrl(
+    callbackUrl: string
+  ): Promise<AigotokenAuthStatus> {
+    return getGlobalAigotokenAuth().completeBrowserLoginFromCallbackUrl(callbackUrl)
+  }
+
+  async cancelAigotokenLogin(): Promise<AigotokenAuthStatus> {
+    return getGlobalAigotokenAuth().cancelLogin()
+  }
+
+  async logoutAigotoken(): Promise<AigotokenAuthStatus> {
+    return getGlobalAigotokenAuth().logout()
   }
 
   /**

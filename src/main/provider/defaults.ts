@@ -265,6 +265,21 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     }
   },
   {
+    id: 'aigotoken',
+    name: 'Aigotoken',
+    apiType: 'new-api',
+    apiKey: '',
+    baseUrl: 'https://www.aigotoken.com/v1',
+    enable: false,
+    websites: {
+      official: 'https://www.aigotoken.com',
+      apiKey: 'https://www.aigotoken.com/console',
+      docs: 'https://www.aigotoken.com',
+      models: 'https://www.aigotoken.com/v1/models',
+      defaultBaseUrl: 'https://www.aigotoken.com/v1'
+    }
+  },
+  {
     id: 'new-api',
     name: 'New API',
     apiType: 'new-api',

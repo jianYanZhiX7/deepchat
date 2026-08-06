@@ -105,11 +105,22 @@
         @auth-error="handleOAuthError"
       />
 
+      <AigotokenOAuth
+        v-if="provider.id === 'aigotoken'"
+        :provider="provider"
+        @auth-success="handleOAuthSuccess"
+        @auth-error="handleOAuthError"
+      />
+
       <div
-        v-if="isGrokOAuthAvailable"
+        v-if="isGrokOAuthAvailable || provider.id === 'aigotoken'"
         class="w-full border-t border-border pt-3 text-xs text-muted-foreground"
       >
-        {{ t('settings.provider.xaiGrokApiKeyAlternative') }}
+        {{
+          provider.id === 'aigotoken'
+            ? t('settings.provider.aigotokenApiKeyAlternative')
+            : t('settings.provider.xaiGrokApiKeyAlternative')
+        }}
       </div>
 
       <div class="flex flex-col gap-2 w-full">
@@ -225,6 +236,7 @@ import { Icon } from '@iconify/vue'
 import GitHubCopilotOAuth from './GitHubCopilotOAuth.vue'
 import OpenAICodexOAuth from './OpenAICodexOAuth.vue'
 import GrokOAuth from './GrokOAuth.vue'
+import AigotokenOAuth from './AigotokenOAuth.vue'
 import { createProviderClient } from '@api/ProviderClient'
 import { useModelCheckStore } from '@/stores/modelCheck'
 import type { LLM_PROVIDER, KeyStatus } from '@shared/types/provider'

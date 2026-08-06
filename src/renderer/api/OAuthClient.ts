@@ -1,7 +1,8 @@
 import type { DeepchatBridge } from '@shared/contracts/bridge'
 import {
   oauthOpenAICodexStatusChangedEvent,
-  oauthXaiGrokStatusChangedEvent
+  oauthXaiGrokStatusChangedEvent,
+  oauthAigotokenStatusChangedEvent
 } from '@shared/contracts/events'
 import {
   oauthOpenAICodexCancelLoginRoute,
@@ -15,8 +16,14 @@ import {
   oauthXaiGrokGetStatusRoute,
   oauthXaiGrokLogoutRoute,
   oauthXaiGrokStartDeviceLoginRoute,
+  oauthAigotokenGetStatusRoute,
+  oauthAigotokenStartBrowserLoginRoute,
+  oauthAigotokenCompleteBrowserLoginFromUrlRoute,
+  oauthAigotokenCancelLoginRoute,
+  oauthAigotokenLogoutRoute,
   type OpenAICodexAuthStatus,
-  type XaiGrokAuthStatus
+  type XaiGrokAuthStatus,
+  type AigotokenAuthStatus
 } from '@shared/contracts/routes'
 import { getDeepchatBridge } from './core'
 
@@ -96,6 +103,44 @@ export function createOAuthClient(bridge: DeepchatBridge = getDeepchatBridge()) 
     })
   }
 
+  async function getAigotokenStatus(): Promise<AigotokenAuthStatus> {
+    const result = await bridge.invoke(oauthAigotokenGetStatusRoute.name, {})
+    return result.status
+  }
+
+  async function startAigotokenBrowserLogin(): Promise<AigotokenAuthStatus> {
+    const result = await bridge.invoke(oauthAigotokenStartBrowserLoginRoute.name, {})
+    return result.status
+  }
+
+  async function completeAigotokenBrowserLoginFromUrl(
+    callbackUrl: string
+  ): Promise<AigotokenAuthStatus> {
+    const result = await bridge.invoke(
+      oauthAigotokenCompleteBrowserLoginFromUrlRoute.name,
+      { callbackUrl }
+    )
+    return result.status
+  }
+
+  async function cancelAigotokenLogin(): Promise<AigotokenAuthStatus> {
+    const result = await bridge.invoke(oauthAigotokenCancelLoginRoute.name, {})
+    return result.status
+  }
+
+  async function logoutAigotoken(): Promise<AigotokenAuthStatus> {
+    const result = await bridge.invoke(oauthAigotokenLogoutRoute.name, {})
+    return result.status
+  }
+
+  function onAigotokenStatusChanged(
+    listener: (status: AigotokenAuthStatus) => void
+  ): () => void {
+    return bridge.on(oauthAigotokenStatusChangedEvent.name, (payload) => {
+      listener(payload.status)
+    })
+  }
+
   return {
     startGitHubCopilotLogin,
     startGitHubCopilotDeviceFlowLogin,
@@ -109,7 +154,13 @@ export function createOAuthClient(bridge: DeepchatBridge = getDeepchatBridge()) 
     startXaiGrokDeviceLogin,
     cancelXaiGrokLogin,
     logoutXaiGrok,
-    onXaiGrokStatusChanged
+    onXaiGrokStatusChanged,
+    getAigotokenStatus,
+    startAigotokenBrowserLogin,
+    completeAigotokenBrowserLoginFromUrl,
+    cancelAigotokenLogin,
+    logoutAigotoken,
+    onAigotokenStatusChanged
   }
 }
 

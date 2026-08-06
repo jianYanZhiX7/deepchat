@@ -78,7 +78,8 @@ import {
 import { semanticNotificationEvent } from './events/notification.events'
 import {
   oauthOpenAICodexStatusChangedEvent,
-  oauthXaiGrokStatusChangedEvent
+  oauthXaiGrokStatusChangedEvent,
+  oauthAigotokenStatusChangedEvent
 } from './events/oauth.events'
 import { providersOllamaPullProgressEvent } from './events/misc.providers.events'
 import { projectEnvironmentsChangedEvent } from './events/project.events'
@@ -221,6 +222,7 @@ export const DEEPCHAT_EVENT_CATALOG = {
   [providersChangedEvent.name]: providersChangedEvent,
   [oauthOpenAICodexStatusChangedEvent.name]: oauthOpenAICodexStatusChangedEvent,
   [oauthXaiGrokStatusChangedEvent.name]: oauthXaiGrokStatusChangedEvent,
+  [oauthAigotokenStatusChangedEvent.name]: oauthAigotokenStatusChangedEvent,
   [projectEnvironmentsChangedEvent.name]: projectEnvironmentsChangedEvent,
   [providersRateLimitConfigUpdatedEvent.name]: providersRateLimitConfigUpdatedEvent,
   [providersRateLimitRequestQueuedEvent.name]: providersRateLimitRequestQueuedEvent,

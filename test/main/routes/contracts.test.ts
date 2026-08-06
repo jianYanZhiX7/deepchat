@@ -31,6 +31,7 @@ import {
   oauthGithubCopilotStartDeviceFlowLoginRoute,
   oauthGithubCopilotStartLoginRoute,
   oauthOpenAICodexGetStatusRoute,
+  oauthAigotokenGetStatusRoute,
   sessionsActivateRoute,
   sessionsCompactRoute,
   sessionsGetGenerationSettingsRoute,
@@ -218,6 +219,11 @@ describe('main kernel contracts', () => {
         'ocr.getRuntimeStatus',
         'oauth.githubCopilot.startDeviceFlowLogin',
         'oauth.githubCopilot.startLogin',
+        'oauth.aigotoken.cancelLogin',
+        'oauth.aigotoken.completeBrowserLoginFromUrl',
+        'oauth.aigotoken.getStatus',
+        'oauth.aigotoken.logout',
+        'oauth.aigotoken.startBrowserLogin',
         'oauth.openaiCodex.cancelLogin',
         'oauth.openaiCodex.getStatus',
         'oauth.openaiCodex.logout',
@@ -523,6 +529,57 @@ describe('main kernel contracts', () => {
           state: 'pending-device',
           authenticated: false,
           storage: 'file'
+        }
+      })
+    ).toThrow()
+  })
+
+  it('validates Aigotoken OAuth route payloads', () => {
+    expect(oauthAigotokenGetStatusRoute.input.parse({})).toEqual({})
+    expect(
+      oauthAigotokenGetStatusRoute.output.parse({
+        status: {
+          state: 'authenticated',
+          authenticated: true
+        }
+      })
+    ).toEqual({
+      status: {
+        state: 'authenticated',
+        authenticated: true
+      }
+    })
+
+    expect(
+      oauthAigotokenGetStatusRoute.output.parse({
+        status: {
+          state: 'pending-browser',
+          authenticated: false
+        }
+      }).status.state
+    ).toBe('pending-browser')
+
+    expect(
+      oauthAigotokenGetStatusRoute.output.parse({
+        status: {
+          state: 'error',
+          authenticated: false,
+          error: 'something went wrong'
+        }
+      })
+    ).toEqual({
+      status: {
+        state: 'error',
+        authenticated: false,
+        error: 'something went wrong'
+      }
+    })
+
+    expect(() =>
+      oauthAigotokenGetStatusRoute.output.parse({
+        status: {
+          state: 'disabled',
+          authenticated: false
         }
       })
     ).toThrow()
@@ -1910,6 +1967,7 @@ describe('main kernel contracts', () => {
         'models.config.changed',
         'models.status.changed',
         'notification.semantic',
+        'oauth.aigotoken.statusChanged',
         'oauth.openaiCodex.statusChanged',
         'providers.acp.debug.event',
         'providers.changed',
