@@ -47,6 +47,7 @@ function makeProviderStore(initial?: LLM_PROVIDER) {
     setProviderModels: vi.fn((_id: string, models: MODEL_META[]) => {
       storedModels = models
     }),
+    batchSetModelStatus: vi.fn(),
     getStoredModels: () => storedModels
   }
 }
@@ -111,7 +112,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -128,7 +130,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -144,7 +147,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -163,7 +167,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -254,8 +259,11 @@ describe('Aigotoken auth', () => {
 
     expect(store.setProviderById).toHaveBeenCalledWith(
       'aigotoken',
-      expect.objectContaining({ apiKey: 'sk-browser-token' })
+      expect.objectContaining({ apiKey: 'sk-browser-token', enable: true })
     )
+    expect(store.batchSetModelStatus).toHaveBeenCalledWith('aigotoken', {
+      'gpt-4': true
+    })
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/oauth/token'),
       expect.objectContaining({
@@ -347,6 +355,15 @@ describe('Aigotoken auth', () => {
     expect(models).toHaveLength(2)
     expect(models[0]).toMatchObject({ id: 'gpt-4', providerId: 'aigotoken', enabled: true })
     expect(models[1]).toMatchObject({ id: 'claude-3', group: 'anthropic' })
+
+    expect(store.setProviderById).toHaveBeenCalledWith(
+      'aigotoken',
+      expect.objectContaining({ apiKey: 'sk-models-token', enable: true })
+    )
+    expect(store.batchSetModelStatus).toHaveBeenCalledWith('aigotoken', {
+      'gpt-4': true,
+      'claude-3': true
+    })
 
     expect(publishEvent).toHaveBeenCalledWith(
       'models.changed',
@@ -442,7 +459,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -478,7 +496,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       publishEvent
     )
@@ -535,7 +554,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )
@@ -592,7 +612,8 @@ describe('Aigotoken auth', () => {
       {
         getProviderById: () => provider,
         setProviderById: () => {},
-        setProviderModels: () => {}
+        setProviderModels: () => {},
+        batchSetModelStatus: () => {}
       },
       vi.fn()
     )

@@ -24,6 +24,7 @@ export type AigotokenProviderSettingsPort = {
   getProviderById(id: string): LLM_PROVIDER | undefined
   setProviderById(id: string, provider: LLM_PROVIDER): void
   setProviderModels(providerId: string, models: MODEL_META[]): void
+  batchSetModelStatus(providerId: string, modelStatusMap: Record<string, boolean>): void
 }
 
 type PendingBrowserFlow = {
@@ -216,7 +217,8 @@ export class AigotokenAuth {
       if (provider) {
         this.providerSettings.setProviderById('aigotoken', {
           ...provider,
-          apiKey
+          apiKey,
+          enable: true
         })
       }
 
@@ -322,6 +324,11 @@ export class AigotokenAuth {
 
       if (models.length > 0) {
         this.providerSettings.setProviderModels('aigotoken', models)
+        const modelStatusMap: Record<string, boolean> = {}
+        for (const model of models) {
+          modelStatusMap[model.id] = true
+        }
+        this.providerSettings.batchSetModelStatus('aigotoken', modelStatusMap)
         this.publishEvent('models.changed', {
           reason: 'runtime-refresh',
           providerId: 'aigotoken',

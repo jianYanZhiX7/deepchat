@@ -530,7 +530,9 @@ export async function createMainProcessControl(dependencies: {
       setProviderById: (providerId, provider) =>
         providerRuntime.setProviderById(providerId, provider),
       setProviderModels: (providerId, models) =>
-        providerSettings.setProviderModels(providerId, models)
+        providerSettings.setProviderModels(providerId, models),
+      batchSetModelStatus: (providerId, modelStatusMap) =>
+        providerSettings.batchSetModelStatus(providerId, modelStatusMap)
     },
     publishDeepchatEvent
   )
