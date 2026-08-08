@@ -1,16 +1,19 @@
 supportedArchitectures:
   os:
     - current
+    - linux
   cpu:
     - current
-
+    - x64
+    - wasm32
+  libc:
+    - glibc
 publicHoistPattern:
-  - '@img/sharp-*'
-
+  - "@img/sharp-*"
 allowBuilds:
-  '@zerob13/nativekit': false
-  '@parcel/watcher': false
-  '@tailwindcss/oxide': true
+  "@zerob13/nativekit": false
+  "@parcel/watcher": false
+  "@tailwindcss/oxide": true
   better-sqlite3-multiple-ciphers: false
   classic-level: true
   electron: true

@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import { TimestampMsSchema, defineEventContract } from '../common'
-import { OpenAICodexAuthStatusSchema, XaiGrokAuthStatusSchema, AigotokenAuthStatusSchema } from '../routes/oauth.routes'
+import {
+  OpenAICodexAuthStatusSchema,
+  XaiGrokAuthStatusSchema,
+  AigotokenAuthStatusSchema
+} from '../routes/oauth.routes'
 
 export const oauthOpenAICodexStatusChangedEvent = defineEventContract({
   name: 'oauth.openaiCodex.statusChanged',

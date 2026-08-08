@@ -1,4 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { createOAuthClient, type OAuthClient } from '@api/OAuthClient'
+import type { AigotokenAuthStatus } from '@shared/contracts/routes'
 
 const router = createRouter({
   history: createWebHashHistory(import.meta.env.BASE_URL),
@@ -97,8 +99,30 @@ const router = createRouter({
         titleKey: 'routes.welcome',
         icon: 'lucide:message-square'
       }
+    },
+    {
+      path: '/aigotoken-login',
+      name: 'aigotoken-login',
+      component: () => import('@/pages/AigotokenLoginPage.vue'),
+      meta: {
+        titleKey: 'routes.welcome',
+        icon: 'lucide:message-square'
+      }
     }
   ]
 })
+
+export function createAigotokenAuthGuard(getStatus: () => Promise<AigotokenAuthStatus>) {
+  return async (to: { name: unknown }) => {
+    if (to.name === 'aigotoken-login') return true
+    const { authenticated } = await getStatus()
+    return authenticated ? true : { name: 'aigotoken-login' }
+  }
+}
+
+let oauthClient: OAuthClient | null = null
+const getAigotokenStatus = () => (oauthClient ??= createOAuthClient()).getAigotokenStatus()
+
+router.beforeEach(createAigotokenAuthGuard(getAigotokenStatus))
 
 export default router

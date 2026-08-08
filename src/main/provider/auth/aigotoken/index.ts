@@ -23,6 +23,7 @@ import { createAigotokenPkcePair, createAigotokenState } from './pkce'
 export type AigotokenProviderSettingsPort = {
   getProviderById(id: string): LLM_PROVIDER | undefined
   setProviderById(id: string, provider: LLM_PROVIDER): void
+  setProviderModels(providerId: string, models: MODEL_META[]): void
 }
 
 type PendingBrowserFlow = {
@@ -242,12 +243,13 @@ export class AigotokenAuth {
     codeVerifier: string,
     redirectUri: string
   ): Promise<string> {
-    const body = new URLSearchParams()
-    body.set('grant_type', 'authorization_code')
-    body.set('client_id', AIGOTOKEN_CLIENT_ID)
-    body.set('code', code)
-    body.set('redirect_uri', redirectUri)
-    body.set('code_verifier', codeVerifier)
+    const body = JSON.stringify({
+      grant_type: 'authorization_code',
+      client_id: AIGOTOKEN_CLIENT_ID,
+      code,
+      redirect_uri: redirectUri,
+      code_verifier: codeVerifier
+    })
 
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), AIGOTOKEN_REQUEST_TIMEOUT_MS)
@@ -257,7 +259,7 @@ export class AigotokenAuth {
         method: 'POST',
         headers: {
           Accept: 'application/json',
-          'Content-Type': 'application/x-www-form-urlencoded'
+          'Content-Type': 'application/json'
         },
         body,
         signal: controller.signal
@@ -319,13 +321,12 @@ export class AigotokenAuth {
       }))
 
       if (models.length > 0) {
-        const provider = this.providerSettings.getProviderById('aigotoken')
-        if (provider) {
-          this.providerSettings.setProviderById('aigotoken', {
-            ...provider,
-            models
-          })
-        }
+        this.providerSettings.setProviderModels('aigotoken', models)
+        this.publishEvent('models.changed', {
+          reason: 'runtime-refresh',
+          providerId: 'aigotoken',
+          version: Date.now()
+        })
       }
     } catch (error) {
       console.warn('aigotoken: model fetch failed after auth:', sanitizeError(error))

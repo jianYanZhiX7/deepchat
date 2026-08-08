@@ -1533,6 +1533,8 @@
     "aigotokenCallbackPlaceholder": "粘贴完整回调 URL",
     "aigotokenCompleteAuthentication": "完成认证",
     "aigotokenApiKeyAlternative": "或者手动输入 Aigotoken API Key：",
+    "aigotokenLoginRequiredTitle": "登录 Aigotoken",
+    "aigotokenLoginRequiredDesc": "请使用 aigotoken.com 账号登录后继续使用 DeepChat。",
     "xaiGrokAuth": "xAI Grok OAuth",
     "xaiGrokConnected": "xAI Grok 已连接",
     "xaiGrokNotConnected": "xAI Grok 未连接",

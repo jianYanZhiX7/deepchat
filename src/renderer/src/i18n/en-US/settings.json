@@ -1534,6 +1534,8 @@
     "aigotokenCallbackPlaceholder": "Paste the full callback URL",
     "aigotokenCompleteAuthentication": "Complete authentication",
     "aigotokenApiKeyAlternative": "Or enter your Aigotoken API key manually below:",
+    "aigotokenLoginRequiredTitle": "Sign in to Aigotoken",
+    "aigotokenLoginRequiredDesc": "Sign in with your aigotoken.com account to continue using DeepChat.",
     "xaiGrokAuth": "xAI Grok OAuth",
     "xaiGrokConnected": "xAI Grok Connected",
     "xaiGrokNotConnected": "xAI Grok Not Connected",

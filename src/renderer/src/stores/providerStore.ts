@@ -5,6 +5,7 @@ import { createProviderClient } from '../../api/ProviderClient'
 import { createConfigClient } from '../../api/ConfigClient'
 import { useIpcQuery } from '@/composables/useIpcQuery'
 import type { AWS_BEDROCK_PROVIDER, LLM_PROVIDER, VERTEX_PROVIDER } from '@shared/types/provider'
+import { PRIORITY_PROVIDER_IDS } from '@shared/buildFlags'
 
 type VoiceAIConfig = {
   audioFormat: string
@@ -76,6 +77,11 @@ export const useProviderStore = defineStore('provider', () => {
 
   const sortProviders = (providerList: LLM_PROVIDER[], useAscendingTime: boolean) => {
     return [...providerList].sort((a, b) => {
+      const aPriority = PRIORITY_PROVIDER_IDS.includes(a.id)
+      const bPriority = PRIORITY_PROVIDER_IDS.includes(b.id)
+      if (aPriority !== bPriority) {
+        return aPriority ? -1 : 1
+      }
       const aOrderIndex = providerOrder.value.indexOf(a.id)
       const bOrderIndex = providerOrder.value.indexOf(b.id)
       if (aOrderIndex !== -1 && bOrderIndex !== -1) {

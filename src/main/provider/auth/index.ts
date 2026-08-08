@@ -23,7 +23,7 @@ export class OAuthService implements OAuthServicePort {
   constructor(
     private readonly providerSettings: Pick<
       ProviderSettingsPort,
-      'getProviderById' | 'setProviderById'
+      'getProviderById' | 'setProviderById' | 'setProviderModels'
     >,
     publishEvent: DeepchatEventPublisher
   ) {
@@ -139,9 +139,7 @@ export class OAuthService implements OAuthServicePort {
     return getGlobalAigotokenAuth().startBrowserLogin()
   }
 
-  async completeAigotokenBrowserLoginFromUrl(
-    callbackUrl: string
-  ): Promise<AigotokenAuthStatus> {
+  async completeAigotokenBrowserLoginFromUrl(callbackUrl: string): Promise<AigotokenAuthStatus> {
     return getGlobalAigotokenAuth().completeBrowserLoginFromCallbackUrl(callbackUrl)
   }
 

@@ -38,11 +38,16 @@ function makeProvider(overrides: Partial<LLM_PROVIDER> = {}): LLM_PROVIDER {
 
 function makeProviderStore(initial?: LLM_PROVIDER) {
   let stored = initial ?? makeProvider()
+  let storedModels: MODEL_META[] = []
   return {
     getProviderById: vi.fn((_id: string) => stored),
     setProviderById: vi.fn((_id: string, provider: LLM_PROVIDER) => {
       stored = provider
-    })
+    }),
+    setProviderModels: vi.fn((_id: string, models: MODEL_META[]) => {
+      storedModels = models
+    }),
+    getStoredModels: () => storedModels
   }
 }
 
@@ -105,7 +110,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -121,7 +127,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -136,7 +143,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -154,7 +162,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -249,8 +258,25 @@ describe('Aigotoken auth', () => {
     )
     expect(fetchMock).toHaveBeenCalledWith(
       expect.stringContaining('/api/oauth/token'),
-      expect.objectContaining({ method: 'POST' })
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({ 'Content-Type': 'application/json' }),
+        body: expect.any(String)
+      })
     )
+
+    const tokenCall = fetchMock.mock.calls.find(([url]) =>
+      String(url).includes('/api/oauth/token')
+    )!
+    const tokenInit = tokenCall[1] as RequestInit
+    const tokenBody = JSON.parse(String(tokenInit.body))
+    expect(tokenBody).toMatchObject({
+      grant_type: 'authorization_code',
+      client_id: 'deepchat',
+      code: 'auth-code-123',
+      redirect_uri: redirectUri
+    })
+    expect(tokenBody.code_verifier).toBeTruthy()
   })
 
   it('fetches and stores models after successful auth', async () => {
@@ -297,7 +323,8 @@ describe('Aigotoken auth', () => {
     vi.stubGlobal('fetch', fetchMock)
 
     const store = makeProviderStore()
-    const auth = new AigotokenAuth(store, vi.fn())
+    const publishEvent = vi.fn()
+    const auth = new AigotokenAuth(store, publishEvent)
 
     await auth.startBrowserLogin()
 
@@ -315,14 +342,19 @@ describe('Aigotoken auth', () => {
       expect(auth.getStatus().authenticated).toBe(true)
     })
 
-    const modelsCall = store.setProviderById.mock.calls.find(
-      (call: [string, LLM_PROVIDER]) => call[1].models !== undefined
-    )
-    expect(modelsCall).toBeTruthy()
-    const models: MODEL_META[] = modelsCall[1].models!
+    expect(store.setProviderModels).toHaveBeenCalledWith('aigotoken', expect.any(Array))
+    const models: MODEL_META[] = store.setProviderModels.mock.calls[0][1]
     expect(models).toHaveLength(2)
     expect(models[0]).toMatchObject({ id: 'gpt-4', providerId: 'aigotoken', enabled: true })
     expect(models[1]).toMatchObject({ id: 'claude-3', group: 'anthropic' })
+
+    expect(publishEvent).toHaveBeenCalledWith(
+      'models.changed',
+      expect.objectContaining({
+        reason: 'runtime-refresh',
+        providerId: 'aigotoken'
+      })
+    )
   })
 
   it('still succeeds auth even when model fetch fails', async () => {
@@ -409,7 +441,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -444,7 +477,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       publishEvent
     )
@@ -500,7 +534,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )
@@ -556,7 +591,8 @@ describe('Aigotoken auth', () => {
     const auth = new AigotokenAuth(
       {
         getProviderById: () => provider,
-        setProviderById: () => {}
+        setProviderById: () => {},
+        setProviderModels: () => {}
       },
       vi.fn()
     )

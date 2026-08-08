@@ -55,4 +55,30 @@ describe('ProviderHelper.removeProviderAtomic', () => {
     expect(deleteProviderModelStatuses).toHaveBeenCalledWith('openai')
     expect(clearProviderModelStore).toHaveBeenCalledWith('openai')
   })
+
+  it('throws and keeps aigotoken provider when removal is blocked', () => {
+    const store = new MockElectronStore()
+    const providers = [createProvider('aigotoken'), createProvider('openai')]
+    store.set('providers', providers)
+
+    const helper = new ProviderHelper({
+      store: store as any,
+      setSetting: (key, value) => store.set(key, value),
+      defaultProviders: providers,
+      publishEvent: vi.fn()
+    })
+    const deleteProviderModelStatuses = vi.fn()
+    const clearProviderModelStore = vi.fn()
+
+    helper.setCleanupHooks({
+      deleteProviderModelStatuses,
+      clearProviderModelStore
+    })
+
+    expect(() => helper.removeProviderAtomic('aigotoken')).toThrowError(/cannot be removed/)
+
+    expect(store.get('providers')).toEqual(providers)
+    expect(deleteProviderModelStatuses).not.toHaveBeenCalled()
+    expect(clearProviderModelStore).not.toHaveBeenCalled()
+  })
 })

@@ -1,79 +1,55 @@
 <template>
-  <div class="flex flex-col items-start gap-3">
-    <Label class="flex-1">
-      {{ t('settings.provider.aigotokenAuth') }}
-    </Label>
+  <div class="flex h-full w-full items-center justify-center bg-background p-6">
+    <div
+      class="w-full max-w-md rounded-xl border border-black/10 bg-background p-8 shadow-sm dark:border-white/10"
+    >
+      <div class="mb-6 flex flex-col items-center gap-3 text-center">
+        <div class="flex size-12 items-center justify-center rounded-xl bg-primary/10 text-primary">
+          <Icon icon="lucide:key-round" class="size-6" />
+        </div>
+        <h1 class="text-xl font-semibold leading-tight">
+          {{ t('settings.provider.aigotokenLoginRequiredTitle') }}
+        </h1>
+        <p class="text-sm leading-5 text-muted-foreground">
+          {{ t('settings.provider.aigotokenLoginRequiredDesc') }}
+        </p>
+      </div>
 
-    <div :class="['w-full rounded-md border px-3 py-2', statusClass]">
-      <div class="flex items-start gap-2">
-        <Spinner v-if="isPending" class="mt-0.5 size-4 shrink-0" />
-        <Icon v-else :icon="statusIcon" class="mt-0.5 size-4 shrink-0" />
-        <div class="min-w-0 flex-1">
-          <div class="text-sm font-medium leading-5">
-            {{ statusText }}
-          </div>
-          <div v-if="status.error" class="mt-1 text-xs opacity-90">
-            {{ status.error }}
+      <div :class="['mb-4 rounded-md border px-3 py-2', statusClass]">
+        <div class="flex items-start gap-2">
+          <Spinner v-if="isPending" class="mt-0.5 size-4 shrink-0" />
+          <Icon v-else :icon="statusIcon" class="mt-0.5 size-4 shrink-0" />
+          <div class="min-w-0 flex-1">
+            <div class="text-sm font-medium leading-5">
+              {{ statusText }}
+            </div>
+            <div v-if="status.error" class="mt-1 text-xs opacity-90">
+              {{ status.error }}
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="flex flex-wrap gap-2">
-      <Button
-        v-if="status.authenticated"
-        variant="outline"
-        size="sm"
-        class="text-xs text-normal rounded-lg"
-        :disabled="!provider.enable"
-        @click="openModelCheckDialog"
-      >
-        <Icon icon="lucide:check-check" class="h-4 w-4 text-muted-foreground" />
-        {{ t('settings.provider.verifyKey') }}
-      </Button>
-
-      <Button
-        variant="default"
-        size="sm"
-        class="text-xs"
-        :disabled="isBusy"
-        @click="startBrowserLogin"
-      >
+      <Button class="w-full" :disabled="isBusy" @click="startBrowserLogin">
         <Spinner v-if="isBrowserBusy" class="size-4" data-icon="inline-start" />
         <Icon v-else icon="lucide:globe" class="size-4" data-icon="inline-start" />
         {{ browserButtonText }}
       </Button>
 
-      <Button
-        v-if="isPending"
-        variant="outline"
-        size="sm"
-        class="text-xs"
-        @click="isCallbackDialogOpen = true"
-      >
-        <Icon icon="lucide:clipboard-paste" class="h-4 w-4" />
-        {{ t('settings.provider.aigotokenPasteCallback') }}
-      </Button>
+      <div class="mt-3 flex flex-wrap justify-center gap-2">
+        <Button v-if="isPending" variant="outline" size="sm" @click="isCallbackDialogOpen = true">
+          <Icon icon="lucide:clipboard-paste" class="size-4" />
+          {{ t('settings.provider.aigotokenPasteCallback') }}
+        </Button>
+        <Button v-if="isPending" variant="outline" size="sm" @click="cancelLogin">
+          <Icon icon="lucide:x" class="size-4" />
+          {{ t('settings.provider.aigotokenCancel') }}
+        </Button>
+      </div>
 
-      <Button v-if="isPending" variant="outline" size="sm" class="text-xs" @click="cancelLogin">
-        <Icon icon="lucide:x" class="h-4 w-4" />
-        {{ t('settings.provider.aigotokenCancel') }}
-      </Button>
-
-      <Button
-        v-if="status.authenticated"
-        variant="outline"
-        size="sm"
-        class="text-xs text-destructive"
-        @click="logout"
-      >
-        <Icon icon="lucide:unlink" class="h-4 w-4 text-destructive" />
-        {{ t('settings.provider.aigotokenSignOut') }}
-      </Button>
-    </div>
-
-    <div class="text-xs leading-5 text-muted-foreground">
-      {{ t('settings.provider.aigotokenLoginTip') }}
+      <div class="mt-6 text-center text-xs leading-5 text-muted-foreground">
+        {{ t('settings.provider.aigotokenLoginTip') }}
+      </div>
     </div>
 
     <Dialog v-model:open="isCallbackDialogOpen">
@@ -114,7 +90,6 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Label } from '@shadcn/components/ui/label'
 import { Button } from '@shadcn/components/ui/button'
 import {
   Dialog,
@@ -127,20 +102,10 @@ import { Input } from '@shadcn/components/ui/input'
 import { Spinner } from '@shadcn/components/ui/spinner'
 import { Icon } from '@iconify/vue'
 import { createOAuthClient } from '@api/OAuthClient'
-import { useModelCheckStore } from '@/stores/modelCheck'
-import type { LLM_PROVIDER } from '@shared/types/provider'
+import { createProviderClient } from '@api/ProviderClient'
 import type { AigotokenAuthStatus } from '@shared/contracts/routes'
 
 const { t } = useI18n()
-
-const props = defineProps<{
-  provider: LLM_PROVIDER
-}>()
-
-const emit = defineEmits<{
-  'auth-success': []
-  'auth-error': [error: string]
-}>()
 
 const signedOutStatus: AigotokenAuthStatus = {
   state: 'signed-out',
@@ -148,12 +113,11 @@ const signedOutStatus: AigotokenAuthStatus = {
 }
 
 const oauthClient = createOAuthClient()
-const modelCheckStore = useModelCheckStore()
+const providerClient = createProviderClient()
 const status = ref<AigotokenAuthStatus>(signedOutStatus)
-const busyAction = ref<'browser' | 'callback' | 'cancel' | 'logout' | null>(null)
+const busyAction = ref<'browser' | 'callback' | 'cancel' | null>(null)
 const isCallbackDialogOpen = ref(false)
 const callbackUrl = ref('')
-let pollTimer: number | null = null
 let unsubscribeStatus: (() => void) | null = null
 
 const isPending = computed(() => status.value.state === 'pending-browser')
@@ -194,20 +158,11 @@ const statusText = computed(() => {
 const browserButtonText = computed(() =>
   isBrowserBusy.value
     ? t('settings.provider.loggingIn')
-    : status.value.authenticated
-      ? t('settings.provider.aigotokenReconnect')
-      : t('settings.provider.aigotokenSignInBrowser')
+    : t('settings.provider.aigotokenSignInBrowser')
 )
 
-const applyStatus = (nextStatus: AigotokenAuthStatus, options: { notify?: boolean } = {}) => {
+const applyStatus = (nextStatus: AigotokenAuthStatus) => {
   status.value = nextStatus
-  if (!options.notify) return
-
-  if (nextStatus.authenticated) {
-    emit('auth-success')
-  } else if (nextStatus.state === 'error' && nextStatus.error) {
-    emit('auth-error', nextStatus.error)
-  }
 }
 
 const refreshStatus = async () => {
@@ -215,15 +170,14 @@ const refreshStatus = async () => {
 }
 
 const runAuthAction = async (
-  action: 'browser' | 'callback' | 'cancel' | 'logout',
+  action: 'browser' | 'callback' | 'cancel',
   runner: () => Promise<AigotokenAuthStatus>
 ) => {
   busyAction.value = action
   try {
-    applyStatus(await runner(), { notify: true })
+    applyStatus(await runner())
   } catch (error) {
-    const message = error instanceof Error ? error.message : t('settings.provider.loginFailed')
-    emit('auth-error', message)
+    const message = error instanceof Error ? error.message : String(error)
     status.value = {
       state: 'error',
       authenticated: false,
@@ -239,10 +193,8 @@ const startBrowserLogin = () =>
 
 const completeBrowserLoginFromUrl = () => {
   if (busyAction.value === 'callback') return
-
   const url = callbackUrl.value.trim()
   if (!url) return
-
   runAuthAction('callback', async () => {
     const nextStatus = await oauthClient.completeAigotokenBrowserLoginFromUrl(url)
     if (nextStatus.authenticated) {
@@ -255,29 +207,23 @@ const completeBrowserLoginFromUrl = () => {
 
 const cancelLogin = () => runAuthAction('cancel', () => oauthClient.cancelAigotokenLogin())
 
-const logout = () => runAuthAction('logout', () => oauthClient.logoutAigotoken())
-
-const openModelCheckDialog = () => {
-  if (props.provider.enable) {
-    modelCheckStore.openDialog(props.provider.id)
+const enableProviderOnAuth = async () => {
+  try {
+    await providerClient.updateProviderAtomic('aigotoken', { enable: true })
+  } catch (error) {
+    console.warn('[AigotokenLogin] failed to enable aigotoken provider:', error)
   }
 }
 
-const stopPolling = () => {
-  if (pollTimer !== null) {
-    clearInterval(pollTimer)
-    pollTimer = null
+watch(
+  () => status.value.authenticated,
+  (authed) => {
+    if (authed) {
+      console.info('[AigotokenLogin] authenticated, enabling provider')
+      void enableProviderOnAuth()
+    }
   }
-}
-
-const updatePolling = () => {
-  stopPolling()
-  if (isPending.value) {
-    pollTimer = window.setInterval(() => {
-      void refreshStatus()
-    }, 2000)
-  }
-}
+)
 
 onMounted(() => {
   unsubscribeStatus = oauthClient.onAigotokenStatusChanged(applyStatus)
@@ -285,10 +231,7 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-  stopPolling()
   unsubscribeStatus?.()
   unsubscribeStatus = null
 })
-
-watch(() => status.value.state, updatePolling)
 </script>

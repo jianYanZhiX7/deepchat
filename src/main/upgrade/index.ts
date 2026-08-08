@@ -1,4 +1,5 @@
 import logger from '@shared/logger'
+import { DISABLE_AUTO_UPDATE } from '@shared/buildFlags'
 import { app, shell } from 'electron'
 import type { DeepchatEventPublisher } from '@shared/contracts/events'
 import electronUpdater from 'electron-updater'
@@ -398,6 +399,10 @@ export class UpgradeService {
 
   // 处理应用获得焦点事件
   handleAppFocus(): void {
+    if (DISABLE_AUTO_UPDATE) {
+      logger.info('[Upgrade] auto-update disabled by build flag')
+      return
+    }
     if (this.isPrivacyModeEnabled()) {
       return
     }

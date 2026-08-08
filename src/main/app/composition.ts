@@ -528,7 +528,9 @@ export async function createMainProcessControl(dependencies: {
     {
       getProviderById: (providerId) => providerSettings.getProviderById(providerId),
       setProviderById: (providerId, provider) =>
-        providerRuntime.setProviderById(providerId, provider)
+        providerRuntime.setProviderById(providerId, provider),
+      setProviderModels: (providerId, models) =>
+        providerSettings.setProviderModels(providerId, models)
     },
     publishDeepchatEvent
   )

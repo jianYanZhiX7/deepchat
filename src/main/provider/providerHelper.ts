@@ -1,4 +1,5 @@
 import logger from '@shared/logger'
+import { NON_REMOVABLE_PROVIDER_IDS } from '@shared/buildFlags'
 import {
   checkRequiresRebuild,
   ProviderBatchUpdate,
@@ -210,6 +211,10 @@ export class ProviderHelper {
   }
 
   removeProviderAtomic(providerId: string): void {
+    if (NON_REMOVABLE_PROVIDER_IDS.includes(providerId)) {
+      logger.info(`[Provider] removal blocked for non-removable: ${providerId}`)
+      throw new Error(`Provider "${providerId}" cannot be removed`)
+    }
     const providers = this.getProviders()
     const filteredProviders = providers.filter((p) => p.id !== providerId)
     this.setSetting<LLM_PROVIDER[]>(PROVIDERS_STORE_KEY, filteredProviders)

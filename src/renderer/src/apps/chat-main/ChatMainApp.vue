@@ -5,6 +5,7 @@ import { RouterView, useRoute, useRouter } from 'vue-router'
 import { createConfigClient } from '@api/ConfigClient'
 import { createNotificationClient } from '@api/NotificationClient'
 import { createOnboardingClient } from '@api/OnboardingClient'
+import { createOAuthClient } from '@api/OAuthClient'
 import SelectedTextContextMenu from '@/components/message/SelectedTextContextMenu.vue'
 import { useArtifactStore } from '@/stores/artifact'
 import { useSessionStore } from '@/stores/ui/session'
@@ -45,6 +46,7 @@ import {
   type GuidedOnboardingResumeTrigger
 } from '@/lib/onboardingResume'
 import type { GuidedOnboardingStepId } from '@shared/contracts/routes'
+import { DISABLE_ONBOARDING } from '@shared/buildFlags'
 import { createWindowClient } from '@api/WindowClient'
 import {
   RENDERER_PERFORMANCE_REPORTER,
@@ -61,6 +63,7 @@ const configClient = createConfigClient()
 const notificationClient = createNotificationClient()
 const onboardingClient = createOnboardingClient()
 const windowClient = createWindowClient()
+const oauthClient = createOAuthClient()
 const artifactStore = useArtifactStore()
 const sessionStore = useSessionStore()
 const agentStore = useAgentStore()
@@ -100,6 +103,7 @@ let cleanupSemanticNotifications: (() => void) | undefined
 const toasterTheme = computed(() =>
   themeStore.themeMode === 'system' ? (themeStore.isDark ? 'dark' : 'light') : themeStore.themeMode
 )
+const isLoginRoute = computed(() => route.name === 'aigotoken-login')
 const { setup: setupMcpDeeplink, cleanup: cleanupMcpDeeplink } = useMcpInstallDeeplinkHandler()
 
 watch(
@@ -138,6 +142,7 @@ const activeTab = ref('chat')
 const isStartupRouteReady = ref(false)
 const processingStartDeeplinkToken = ref<number | null>(null)
 const processedStartDeeplinkToken = ref<number | null>(null)
+let unsubscribeAigotokenStatus: (() => void) | null = null
 
 const isDevWelcomeOverrideEnabled = () => {
   if (!import.meta.env.DEV) return false
@@ -155,6 +160,28 @@ const ensureStartupWelcomeState = async () => {
 
     const currentRoute = router.currentRoute.value
     const isWelcomeRoute = currentRoute.name === 'welcome' || currentRoute.path === '/welcome'
+    const isLoginRoute = currentRoute.name === 'aigotoken-login'
+
+    let aigotokenAuthed = false
+    try {
+      aigotokenAuthed = (await oauthClient.getAigotokenStatus()).authenticated
+    } catch (error) {
+      console.warn('[App] aigotoken auth check failed during startup:', error)
+    }
+    if (!aigotokenAuthed) {
+      if (!isLoginRoute) {
+        console.info('[App] aigotoken not authenticated, redirecting to login')
+        await router.replace({ name: 'aigotoken-login' })
+      }
+      return
+    }
+
+    if (DISABLE_ONBOARDING) {
+      if (isWelcomeRoute || isLoginRoute) {
+        await router.replace({ name: 'chat' })
+      }
+      return
+    }
 
     if (isDevWelcomeOverrideEnabled()) {
       if (!isWelcomeRoute) {
@@ -173,7 +200,7 @@ const ensureStartupWelcomeState = async () => {
     }
 
     if (onboardingState?.status === 'completed') {
-      if (isWelcomeRoute) {
+      if (isWelcomeRoute || isLoginRoute) {
         await router.replace({ name: 'chat' })
       }
       return
@@ -194,7 +221,7 @@ const ensureStartupWelcomeState = async () => {
       return
     }
 
-    if (isWelcomeRoute) {
+    if (isWelcomeRoute || isLoginRoute) {
       await router.replace({ name: 'chat' })
     }
   } finally {
@@ -446,6 +473,9 @@ watch(
 
 onMounted(() => {
   performanceReporter.recordStartup('shell-mounted')
+  unsubscribeAigotokenStatus = oauthClient.onAigotokenStatusChanged(() => {
+    void ensureStartupWelcomeState()
+  })
   cleanupSemanticNotifications = notificationClient.onSemanticNotification((delivery) => {
     semanticNotificationController.handle(delivery)
   })
@@ -521,6 +551,8 @@ onBeforeUnmount(() => {
   cleanupMcpDeeplink()
   cleanupSemanticNotifications?.()
   cleanupSemanticNotifications = undefined
+  unsubscribeAigotokenStatus?.()
+  unsubscribeAigotokenStatus = null
   semanticNotificationController.dispose()
   performanceReporter.dispose()
 })
@@ -532,21 +564,26 @@ onBeforeUnmount(() => {
     class="flex flex-col h-screen"
     :class="isWinMacOS ? 'bg-window-background' : 'bg-background'"
   >
-    <AppBar />
-    <div class="flex flex-row h-0 grow relative overflow-hidden px-px py-px" :dir="langStore.dir">
-      <div class="flex flex-row w-full h-full">
-        <WindowSideBar></WindowSideBar>
+    <template v-if="!isLoginRoute">
+      <AppBar />
+      <div class="flex flex-row h-0 grow relative overflow-hidden px-px py-px" :dir="langStore.dir">
+        <div class="flex flex-row w-full h-full">
+          <WindowSideBar></WindowSideBar>
 
-        <!-- Main content area -->
-        <div
-          data-testid="app-main"
-          class="flex h-full min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-tl-xl border-l border-t border-black/20 bg-background dark:border-white/10"
-        >
-          <div class="min-h-0 flex-1">
-            <RouterView v-if="isStartupRouteReady" />
+          <!-- Main content area -->
+          <div
+            data-testid="app-main"
+            class="flex h-full min-h-0 flex-1 min-w-0 flex-col overflow-hidden rounded-tl-xl border-l border-t border-black/20 bg-background dark:border-white/10"
+          >
+            <div class="min-h-0 flex-1">
+              <RouterView v-if="isStartupRouteReady" />
+            </div>
           </div>
         </div>
       </div>
+    </template>
+    <div v-else class="h-0 grow">
+      <RouterView v-if="isStartupRouteReady" />
     </div>
     <!-- Global message dialog -->
     <MessageDialog />

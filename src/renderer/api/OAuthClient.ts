@@ -116,10 +116,9 @@ export function createOAuthClient(bridge: DeepchatBridge = getDeepchatBridge()) 
   async function completeAigotokenBrowserLoginFromUrl(
     callbackUrl: string
   ): Promise<AigotokenAuthStatus> {
-    const result = await bridge.invoke(
-      oauthAigotokenCompleteBrowserLoginFromUrlRoute.name,
-      { callbackUrl }
-    )
+    const result = await bridge.invoke(oauthAigotokenCompleteBrowserLoginFromUrlRoute.name, {
+      callbackUrl
+    })
     return result.status
   }
 
@@ -133,9 +132,7 @@ export function createOAuthClient(bridge: DeepchatBridge = getDeepchatBridge()) 
     return result.status
   }
 
-  function onAigotokenStatusChanged(
-    listener: (status: AigotokenAuthStatus) => void
-  ): () => void {
+  function onAigotokenStatusChanged(listener: (status: AigotokenAuthStatus) => void): () => void {
     return bridge.on(oauthAigotokenStatusChangedEvent.name, (payload) => {
       listener(payload.status)
     })
