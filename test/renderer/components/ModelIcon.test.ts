@@ -2,8 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { reactive } from 'vue'
 
+const { openExternal } = vi.hoisted(() => ({ openExternal: vi.fn() }))
+
 const providerStore = reactive({
-  providers: [] as Array<{ id: string; apiType?: string }>
+  providers: [] as Array<{ id: string; apiType?: string; websites?: { official: string } }>
 })
 
 vi.mock('@/stores/providerStore', () => ({
@@ -16,9 +18,15 @@ vi.mock('@/stores/ui/agent', () => ({
   })
 }))
 
+vi.mock('@api/BrowserClient', () => ({
+  createBrowserClient: () => ({ openExternal })
+}))
+
 describe('ModelIcon', () => {
   beforeEach(() => {
     providerStore.providers = []
+    openExternal.mockReset()
+    openExternal.mockResolvedValue(undefined)
   })
 
   it('resolves dimcode-acp to the DimCode icon', async () => {
@@ -180,5 +188,45 @@ describe('ModelIcon', () => {
     expect(gemini.get('img').attributes('src')).toBe(geminiIcon)
     expect(apiTypeFallback.get('img').attributes('alt')).toBe('openai')
     expect(apiTypeFallback.get('img').attributes('src')).toBe(openaiIcon)
+  })
+
+  it('resolves aigotoken to the aigotoken icon', async () => {
+    const ModelIcon = (await import('@/components/icons/ModelIcon.vue')).default
+    const aigotokenIcon = (await import('@/assets/llm-icons/aigotoken.svg?url')).default
+    const wrapper = mount(ModelIcon, {
+      props: {
+        modelId: 'aigotoken'
+      }
+    })
+
+    const image = wrapper.get('img')
+
+    expect(image.attributes('alt')).toBe('aigotoken')
+    expect(image.attributes('src')).toBe(aigotokenIcon)
+  })
+
+  it('opens the provider official website when a linkable icon is clicked', async () => {
+    providerStore.providers = [
+      {
+        id: 'aigotoken',
+        apiType: 'new-api',
+        websites: { official: 'https://www.aigotoken.com', apiKey: '' }
+      }
+    ]
+    const ModelIcon = (await import('@/components/icons/ModelIcon.vue')).default
+    const wrapper = mount(ModelIcon, {
+      props: {
+        modelId: 'aigotoken',
+        linkable: true
+      }
+    })
+
+    const link = wrapper.find('a')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe('https://www.aigotoken.com')
+
+    await link.trigger('click')
+
+    expect(openExternal).toHaveBeenCalledWith('https://www.aigotoken.com')
   })
 })

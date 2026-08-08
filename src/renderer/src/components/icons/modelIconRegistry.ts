@@ -82,6 +82,7 @@ import o3fanColorIcon from '@/assets/llm-icons/o3-fan.png?url'
 import voiceAiColorIcon from '@/assets/llm-icons/voiceai.svg?url'
 import novitaAiIcon from '@/assets/llm-icons/novitaai.svg?url'
 import astraflowIcon from '@/assets/llm-icons/astraflow.png?url'
+import aigotokenColorIcon from '@/assets/llm-icons/aigotoken.svg?url'
 
 export const modelIcons = {
   'kimi-for-coding': kimiColorIcon,
@@ -188,6 +189,7 @@ export const modelIcons = {
   'novita.ai': novitaAiIcon,
   astraflow: astraflowIcon,
   'astraflow-cn': astraflowIcon,
+  aigotoken: aigotokenColorIcon,
   default: defaultIcon
 } as const
 

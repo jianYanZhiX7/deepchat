@@ -7,6 +7,20 @@
     >
       <!-- Left Column: Agent Icons (48px) -->
       <div class="window-no-drag-region flex flex-col items-center shrink-0 pt-2 pb-2 gap-1 w-12">
+        <!-- aigotoken -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              data-testid="window-sidebar-aigotoken-button"
+              class="flex items-center justify-center w-9 h-9 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
+              @click="openAigotokenWebsite"
+            >
+              <ModelIcon model-id="aigotoken" custom-class="w-4 h-4" :is-dark="themeStore.isDark" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">aigotoken.com</TooltipContent>
+        </Tooltip>
+
         <!-- All agents button -->
         <Tooltip>
           <TooltipTrigger as-child>
@@ -616,6 +630,7 @@ import {
 import { createSettingsClient } from '@api/SettingsClient'
 import { createRemoteControlClient } from '@api/RemoteControlClient'
 import { createDeviceClient } from '@api/DeviceClient'
+import { createBrowserClient } from '@api/BrowserClient'
 import { useAgentStore } from '@/stores/ui/agent'
 import { useProjectStore } from '@/stores/ui/project'
 import {
@@ -628,6 +643,7 @@ import { useSpotlightStore } from '@/stores/ui/spotlight'
 import { usePluginCatalogStore } from '@/stores/pluginCatalog'
 import type { RemoteChannel, RemoteRuntimeState } from '@shared/types/remote'
 import AgentAvatar from './icons/AgentAvatar.vue'
+import ModelIcon from './icons/ModelIcon.vue'
 import WindowSideBarSessionItem from './WindowSideBarSessionItem.vue'
 import { useI18n } from 'vue-i18n'
 import { useSidebarStore } from '@/stores/ui/sidebar'
@@ -662,6 +678,7 @@ type SessionItemRect = {
 const settingsClient = createSettingsClient()
 const remoteControlClient = createRemoteControlClient()
 const deviceClient = createDeviceClient()
+const browserClient = createBrowserClient()
 const { t } = useI18n()
 const router = useRouter()
 const agentStore = useAgentStore()
@@ -1276,6 +1293,12 @@ const openSettings = () => {
 
 const openPlugins = () => {
   void router?.push({ name: 'plugins' })
+}
+
+const openAigotokenWebsite = () => {
+  void browserClient.openExternal('https://www.aigotoken.com').catch(() => {
+    window.open('https://www.aigotoken.com', '_blank', 'noopener,noreferrer')
+  })
 }
 
 const openRemoteSettings = async () => {

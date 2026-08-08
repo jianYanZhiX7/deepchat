@@ -24,6 +24,7 @@
             custom-class="w-[18px] h-[18px]"
             :is-dark="themeStore.isDark"
             :alt="currentMessage.role"
+            linkable
           />
         </div>
 
