@@ -135,6 +135,7 @@ import {
   resolveSettingsNavigationPath
 } from '@shared/settingsNavigation'
 import type { SettingsNavigationPayload } from '@shared/settingsNavigation'
+import { HIDE_SETTINGS_SYSTEM_GROUP } from '@shared/buildFlags'
 import { useStartupWorkloadStore } from '@/stores/startupWorkloadStore'
 import { preloadSettingsRoute } from './settingsRouteComponents'
 
@@ -529,22 +530,24 @@ const settings: Ref<
 )
 
 const settingGroups = ref(
-  getSettingsNavigationGroups(runtimePlatform, runtimeArch, import.meta.env.DEV).map((group) => ({
-    key: group.key,
-    titleKey: group.titleKey,
-    items: group.items.map((item) => ({
-      title: item.titleKey,
-      name: item.routeName,
-      icon: item.icon,
-      path: resolveSettingsNavigationPath(
-        item.routeName,
-        undefined,
-        runtimePlatform,
-        runtimeArch,
-        import.meta.env.DEV
-      )
+  getSettingsNavigationGroups(runtimePlatform, runtimeArch, import.meta.env.DEV)
+    .filter((group) => !HIDE_SETTINGS_SYSTEM_GROUP || group.key !== 'system')
+    .map((group) => ({
+      key: group.key,
+      titleKey: group.titleKey,
+      items: group.items.map((item) => ({
+        title: item.titleKey,
+        name: item.routeName,
+        icon: item.icon,
+        path: resolveSettingsNavigationPath(
+          item.routeName,
+          undefined,
+          runtimePlatform,
+          runtimeArch,
+          import.meta.env.DEV
+        )
+      }))
     }))
-  }))
 )
 
 onMounted(() => {
