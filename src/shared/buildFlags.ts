@@ -1,6 +1,6 @@
-export const DISABLE_AUTO_UPDATE = false
+export const DISABLE_AUTO_UPDATE = true
 
-export const DISABLE_ONBOARDING = false
+export const DISABLE_ONBOARDING = true
 
 export const NON_REMOVABLE_PROVIDER_IDS: readonly string[] = ['aigotoken']
 

@@ -12,7 +12,8 @@ const {
   appRelaunchMock,
   appExitMock,
   appGetPathMock,
-  appGetVersionMock
+  appGetVersionMock,
+  buildFlagsState
 } = vi.hoisted(() => {
   const autoUpdaterState = {
     listeners: new Map<string, (...args: unknown[]) => void>(),
@@ -28,7 +29,8 @@ const {
     appRelaunchMock: vi.fn(),
     appExitMock: vi.fn(),
     appGetPathMock: vi.fn(() => ''),
-    appGetVersionMock: vi.fn(() => '1.0.0')
+    appGetVersionMock: vi.fn(() => '1.0.0'),
+    buildFlagsState: { disableAutoUpdate: false }
   }
 })
 
@@ -63,6 +65,12 @@ vi.mock('electron-updater', () => ({
   }
 }))
 
+vi.mock('@shared/buildFlags', () => ({
+  get DISABLE_AUTO_UPDATE() {
+    return buildFlagsState.disableAutoUpdate
+  }
+}))
+
 vi.unmock('fs')
 
 import electronUpdater from 'electron-updater'
@@ -74,6 +82,7 @@ describe('UpgradeService', () => {
   beforeEach(async () => {
     vi.useFakeTimers()
     autoUpdaterState.reset()
+    buildFlagsState.disableAutoUpdate = false
     publishEventMock.mockReset()
     requestUpdateInstallMock.mockReset()
     requestUpdateInstallMock.mockImplementation(async (installAction: () => void) =>
@@ -319,5 +328,29 @@ describe('UpgradeService', () => {
       })
     )
     expect(existsSync(markerPath)).toBe(false)
+  })
+
+  it('disables check, download, and install when DISABLE_AUTO_UPDATE is true', async () => {
+    buildFlagsState.disableAutoUpdate = true
+    const settings = {
+      getChannel: vi.fn(() => 'stable')
+    } as any
+
+    const service = new UpgradeService(
+      settings,
+      () => false,
+      requestUpdateInstallMock,
+      publishEventMock
+    )
+
+    await service.checkUpdate()
+    expect(electronUpdater.autoUpdater.checkForUpdates).not.toHaveBeenCalled()
+
+    expect(service.startDownloadUpdate()).toBe(false)
+    expect(electronUpdater.autoUpdater.downloadUpdate).not.toHaveBeenCalled()
+
+    ;(service as any)._status = 'downloaded'
+    expect(service.restartToUpdate()).toBe(false)
+    expect(electronUpdater.autoUpdater.quitAndInstall).not.toHaveBeenCalled()
   })
 })

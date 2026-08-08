@@ -6,6 +6,20 @@ import {
   GUIDED_ONBOARDING_RESUME_STORAGE_KEY
 } from '@/lib/onboardingResume'
 
+const { buildFlagsState } = vi.hoisted(() => ({
+  buildFlagsState: { disableOnboarding: false }
+}))
+
+vi.mock('@shared/buildFlags', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/buildFlags')>()
+  return {
+    ...actual,
+    get DISABLE_ONBOARDING() {
+      return buildFlagsState.disableOnboarding
+    }
+  }
+})
+
 const DEV_WELCOME_OVERRIDE_KEY = '__deepchat_dev_force_welcome'
 
 const mountApp = async (options?: {
@@ -284,6 +298,10 @@ const mountApp = async (options?: {
   ;(window as any).deepchat = {
     invoke: vi.fn((routeName: string) => {
       switch (routeName) {
+        case 'oauth.aigotoken.getStatus':
+          return Promise.resolve({
+            status: { state: 'authenticated', authenticated: true }
+          })
         case 'config.getEntries':
           return Promise.resolve({ version: 0, values: {} })
         case 'models.getProviderCatalog':
@@ -483,6 +501,7 @@ const mountApp = async (options?: {
 afterEach(() => {
   window.sessionStorage.removeItem(DEV_WELCOME_OVERRIDE_KEY)
   window.sessionStorage.removeItem(GUIDED_ONBOARDING_RESUME_STORAGE_KEY)
+  buildFlagsState.disableOnboarding = false
 })
 
 describe('App startup welcome flow', () => {
@@ -935,5 +954,19 @@ describe('App startup welcome flow', () => {
     shortcutHandler?.({ action: 'toggleWorkspace' })
 
     expect(sidepanelStore.toggleWorkspace).not.toHaveBeenCalled()
+  })
+
+  it('skips onboarding and routes straight to chat when DISABLE_ONBOARDING is true', async () => {
+    buildFlagsState.disableOnboarding = true
+    const { router, onboardingClient, configService, route } = await mountApp({
+      initComplete: false,
+      routeName: 'welcome'
+    })
+
+    expect(configService.getSetting).not.toHaveBeenCalledWith('init_complete')
+    expect(onboardingClient.getState).not.toHaveBeenCalled()
+    expect(onboardingClient.start).not.toHaveBeenCalled()
+    expect(router.replace).toHaveBeenCalledWith({ name: 'chat' })
+    expect(route.name).toBe('chat')
   })
 })

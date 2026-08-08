@@ -163,7 +163,7 @@ export class UpgradeService {
     // 配置自动更新
     autoUpdater.autoDownload = false // 默认不自动下载，由我们手动控制
     autoUpdater.allowDowngrade = false
-    autoUpdater.autoInstallOnAppQuit = true
+    autoUpdater.autoInstallOnAppQuit = !DISABLE_AUTO_UPDATE
 
     // 错误处理
     autoUpdater.on('error', (e) => {
@@ -422,6 +422,10 @@ export class UpgradeService {
    * @returns
    */
   async checkUpdate(type?: string): Promise<void> {
+    if (DISABLE_AUTO_UPDATE) {
+      logger.info('[Upgrade] auto-update disabled by build flag')
+      return
+    }
     if (this._lock) {
       return
     }
@@ -485,6 +489,10 @@ export class UpgradeService {
 
   // 开始下载更新（如果手动触发）
   startDownloadUpdate(): boolean {
+    if (DISABLE_AUTO_UPDATE) {
+      logger.info('[Upgrade] auto-update disabled by build flag')
+      return false
+    }
     if (this._status !== 'available') {
       return false
     }
@@ -603,6 +611,10 @@ export class UpgradeService {
 
   // 重启并更新
   restartToUpdate(): boolean {
+    if (DISABLE_AUTO_UPDATE) {
+      logger.info('[Upgrade] auto-update disabled by build flag')
+      return false
+    }
     logger.info('重启并更新')
     if (this._status !== 'downloaded') {
       this.emitError('更新尚未下载完成')
