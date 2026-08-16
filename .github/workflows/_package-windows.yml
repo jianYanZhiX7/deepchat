@@ -113,6 +113,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RTK_GITHUB_TOKEN || github.token }}
 
+      - name: Pre-populate ACP npm cache
+        run: pnpm run acp:cache
+
       - name: Install and verify DuckDB VSS
         run: |
           pnpm run installRuntime:duckdb:vss -- --platform win32 --arch ${{ inputs.arch }}

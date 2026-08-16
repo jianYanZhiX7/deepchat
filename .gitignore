@@ -17,6 +17,7 @@ build/bundled-plugins/
 build/managed-helpers/
 runtime/**/*
 plugins/*/runtime/**/*
+resources/acp-npm-cache/
 .eslintcache
 .env
 .env.local

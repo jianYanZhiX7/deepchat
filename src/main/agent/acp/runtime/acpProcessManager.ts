@@ -215,6 +215,7 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     { agentId: string; handler: ProcessExitHandler }
   >()
   private readonly runtimeHelper = RuntimeHelper.getInstance()
+  private bundledNpmCachePromise: Promise<string | null> | null = null
   private readonly terminalManager = new AcpTerminalManager()
   private readonly sessionWorkdirs = new Map<string, string>()
   private readonly sessionConversations = new Map<string, string>()
@@ -1341,6 +1342,58 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
     }
   }
 
+  private ensureBundledNpmCache(): Promise<string | null> {
+    if (!this.bundledNpmCachePromise) {
+      this.bundledNpmCachePromise = this.resolveBundledNpmCache()
+    }
+    return this.bundledNpmCachePromise
+  }
+
+  private async resolveBundledNpmCache(): Promise<string | null> {
+    const resourcesPath = (process as NodeJS.Process & { resourcesPath?: string }).resourcesPath
+    if (!resourcesPath) {
+      return null
+    }
+
+    const bundledCache = [
+      path.join(resourcesPath, 'app.asar.unpacked', 'resources', 'acp-npm-cache'),
+      path.join(resourcesPath, 'resources', 'acp-npm-cache')
+    ].find((candidate) => fs.existsSync(candidate))
+
+    if (!bundledCache) {
+      return null
+    }
+
+    const writableCache = path.join(app.getPath('userData'), 'acp-npm-cache')
+    try {
+      const shouldCopy = await this.shouldRefreshBundledCache(bundledCache, writableCache)
+      if (shouldCopy) {
+        await fs.promises.rm(writableCache, { recursive: true, force: true })
+        await fs.promises.mkdir(writableCache, { recursive: true })
+        await fs.promises.cp(bundledCache, writableCache, { recursive: true })
+      }
+      return writableCache
+    } catch (error) {
+      console.warn('[ACP] Failed to stage bundled npm cache:', error)
+      return null
+    }
+  }
+
+  private async shouldRefreshBundledCache(
+    bundledCache: string,
+    writableCache: string
+  ): Promise<boolean> {
+    const markerPath = path.join(bundledCache, '.acp-cache-marker')
+    const writableMarkerPath = path.join(writableCache, '.acp-cache-marker')
+    try {
+      const bundledMarker = await fs.promises.readFile(markerPath, 'utf8')
+      const writableMarker = await fs.promises.readFile(writableMarkerPath, 'utf8')
+      return bundledMarker.trim() !== writableMarker.trim()
+    } catch {
+      return true
+    }
+  }
+
   private async spawnAgentProcess(
     agent: AcpAgentConfig,
     workdir: string,
@@ -1439,6 +1492,14 @@ export class AcpProcessManager implements AgentProcessManager<AcpProcessHandle, 
         this.assertAcceptingProcesses()
         if (npmRegistry && npmRegistry !== '') {
           env.npm_config_registry = npmRegistry
+        }
+      }
+
+      if (launchSpec.distributionType === 'npx') {
+        const bundledNpmCache = await this.ensureBundledNpmCache()
+        if (bundledNpmCache) {
+          env.npm_config_cache = bundledNpmCache
+          env.npm_config_prefer_offline = 'true'
         }
       }
 

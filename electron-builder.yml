@@ -51,6 +51,9 @@ extraResources:
   - from: ./resources/skills/
     to: app.asar.unpacked/resources/skills
     filter: ['**/*']
+  - from: ./resources/acp-npm-cache/
+    to: app.asar.unpacked/resources/acp-npm-cache
+    filter: ['**/*']
   - from: ./build/bundled-plugins/
     to: app.asar.unpacked/plugins
     filter: ['**/*.dcplugin']

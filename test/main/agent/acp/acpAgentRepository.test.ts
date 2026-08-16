@@ -218,6 +218,73 @@ describe('AcpAgentRepository', () => {
     })
   })
 
+  it('enables claude-acp by default on first registry sync while leaving other agents disabled', () => {
+    const rows = new Map<string, any>()
+    const agentsTable = {
+      get: (id: string) => rows.get(id),
+      list: () => [...rows.values()],
+      upsert: (input: any) => {
+        rows.set(input.id, {
+          id: input.id,
+          agent_type: input.agentType,
+          source: input.source,
+          name: input.name,
+          enabled: input.enabled ? 1 : 0,
+          protected: input.protected ? 1 : 0,
+          description: input.description ?? null,
+          icon: input.icon ?? null,
+          avatar_json: input.avatarJson ?? null,
+          config_json: input.configJson ?? null,
+          state_json: input.stateJson ?? null,
+          created_at: input.createdAt ?? Date.now(),
+          updated_at: input.updatedAt ?? Date.now()
+        })
+      }
+    }
+    const repository = createRepository({
+      agentsTable,
+      newSessionsTable: { list: () => [] }
+    })
+
+    repository.syncRegistry([
+      {
+        id: 'claude-acp',
+        name: 'Claude Agent',
+        version: '0.66.0',
+        distribution: { npx: { package: '@agentclientprotocol/claude-agent-acp@0.66.0' } }
+      },
+      {
+        id: 'cline',
+        name: 'Cline',
+        version: '1.0.0',
+        distribution: { npx: { package: '@example/cline@1.0.0' } }
+      }
+    ])
+
+    expect(rows.get('claude-acp').enabled).toBe(1)
+    expect(rows.get('cline').enabled).toBe(0)
+
+    repository.syncRegistry([
+      {
+        id: 'claude-acp',
+        name: 'Claude Agent',
+        version: '0.66.0',
+        distribution: { npx: { package: '@agentclientprotocol/claude-agent-acp@0.66.0' } }
+      }
+    ])
+    expect(rows.get('claude-acp').enabled).toBe(1)
+    rows.get('claude-acp').enabled = 0
+    repository.syncRegistry([
+      {
+        id: 'claude-acp',
+        name: 'Claude Agent',
+        version: '0.66.0',
+        distribution: { npx: { package: '@agentclientprotocol/claude-agent-acp@0.66.0' } }
+      }
+    ])
+    expect(rows.get('claude-acp').enabled).toBe(0)
+  })
+
   it('refuses to clear registry ACP installation while sessions remain', () => {
     const row = {
       id: 'codex-acp',

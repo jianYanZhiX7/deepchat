@@ -240,7 +240,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     apiType: 'acp',
     apiKey: '',
     baseUrl: '',
-    enable: false,
+    enable: true,
     websites: {
       official: 'https://agentclientprotocol.com',
       apiKey: '',
@@ -270,7 +270,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     apiType: 'new-api',
     apiKey: '',
     baseUrl: 'https://www.aigotoken.com/v1',
-    enable: false,
+    enable: true,
     websites: {
       official: 'https://www.aigotoken.com',
       apiKey: 'https://www.aigotoken.com/console',

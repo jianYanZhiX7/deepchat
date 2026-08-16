@@ -51,6 +51,8 @@ const sanitizeString = (value?: string | null): string | null => {
 
 const clone = <T>(value: T): T => JSON.parse(JSON.stringify(value)) as T
 
+const DEFAULT_ENABLED_REGISTRY_AGENT_IDS = new Set<string>(['claude-acp'])
+
 export class AcpAgentRepository {
   constructor(private readonly dependencies: AcpAgentRepositoryDependencies) {}
 
@@ -137,7 +139,9 @@ export class AcpAgentRepository {
         agentType: 'acp',
         source: 'registry',
         name: agent.name,
-        enabled: currentRow ? currentRow.enabled === 1 : (legacyState?.enabled ?? false),
+        enabled: currentRow
+          ? currentRow.enabled === 1
+          : (legacyState?.enabled ?? DEFAULT_ENABLED_REGISTRY_AGENT_IDS.has(agent.id)),
         protected: false,
         description: sanitizeString(agent.description),
         icon: sanitizeString(agent.icon),
