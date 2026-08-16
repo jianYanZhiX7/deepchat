@@ -13,6 +13,15 @@ const SAFE_ICON_ID_PATTERN = /^[A-Za-z0-9._-]+$/
 const REQUEST_TIMEOUT_MS = 30_000
 const MAX_REDIRECTS = 5
 const USER_AGENT = 'DeepChat build registry fetcher'
+const CLAUDE_ACP_OVERRIDE_ICON = path.resolve(
+  process.cwd(),
+  'src',
+  'renderer',
+  'src',
+  'assets',
+  'llm-icons',
+  'claude-acp.svg'
+)
 
 const fetchText = (url, redirectCount = 0) =>
   new Promise((resolve, reject) => {
@@ -124,11 +133,22 @@ const main = async () => {
   const parsed = JSON.parse(text)
 
   const iconCount = await stageIcons(parsed)
+  await applyClaudeAcpIconOverride()
   await writeManifest(parsed)
   await commitStagedIcons()
 
   console.log(`[fetch-acp-registry] wrote ${OUTPUT_PATH}`)
   console.log(`[fetch-acp-registry] wrote ${iconCount} icons to ${ICON_OUTPUT_DIR}`)
+}
+
+const applyClaudeAcpIconOverride = async () => {
+  try {
+    const overrideSvg = await fs.readFile(CLAUDE_ACP_OVERRIDE_ICON, 'utf-8')
+    await fs.writeFile(path.join(ICON_TMP_DIR, 'claude-acp.svg'), overrideSvg, 'utf-8')
+    console.log('[fetch-acp-registry] applied claude-acp icon override')
+  } catch (error) {
+    console.warn('[fetch-acp-registry] failed to apply claude-acp icon override:', error.message)
+  }
 }
 
 main().catch((error) => {

@@ -28,3 +28,5 @@ export const sanitizeAcpRegistryFileSegment = (value: string): string => {
 
 export const getAcpRegistryIconFileName = (agentId: string): string =>
   `${sanitizeAcpRegistryFileSegment(agentId)}.svg`
+
+export const ACP_LOCAL_ICON_OVERRIDE_AGENT_IDS = new Set<string>(['claude-acp'])

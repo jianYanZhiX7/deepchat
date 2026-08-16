@@ -9,6 +9,7 @@ import type {
 } from '@shared/types/acp'
 import { SVGSanitizer } from '@/lib/svgSanitizer'
 import {
+  ACP_LOCAL_ICON_OVERRIDE_AGENT_IDS,
   ACP_REGISTRY_CACHE_TTL_MS,
   ACP_REGISTRY_ICON_CACHE_DIRNAME,
   ACP_REGISTRY_ICON_RESOURCE_DIR,
@@ -464,9 +465,11 @@ export class AcpRegistryService {
   }
 
   private resolveLocalIconPath(agentId: string): string | null {
-    const cachedPath = this.getCachedIconPath(agentId)
-    if (fs.existsSync(cachedPath)) {
-      return cachedPath
+    if (!ACP_LOCAL_ICON_OVERRIDE_AGENT_IDS.has(agentId)) {
+      const cachedPath = this.getCachedIconPath(agentId)
+      if (fs.existsSync(cachedPath)) {
+        return cachedPath
+      }
     }
 
     for (const candidate of this.getBuiltInIconCandidatePaths(agentId)) {
@@ -511,6 +514,10 @@ export class AcpRegistryService {
   }
 
   private async syncAgentIcon(agent: AcpRegistryAgent): Promise<void> {
+    if (ACP_LOCAL_ICON_OVERRIDE_AGENT_IDS.has(agent.id)) {
+      return
+    }
+
     const iconUrl = agent.icon?.trim()
     if (!iconUrl || !isAcpRegistryIconUrl(iconUrl)) {
       return

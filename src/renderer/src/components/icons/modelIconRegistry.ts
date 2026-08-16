@@ -58,6 +58,7 @@ import geminiColorIcon from '@/assets/llm-icons/gemini-color.svg?url'
 import githubColorIcon from '@/assets/llm-icons/github.svg?url'
 import azureOpenaiColorIcon from '@/assets/llm-icons/azure-color.svg?url'
 import claudeColorIcon from '@/assets/llm-icons/claude-color.svg?url'
+import claudeAcpColorIcon from '@/assets/llm-icons/claude-acp.svg?url'
 import googleColorIcon from '@/assets/llm-icons/google-color.svg?url'
 import qiniuIcon from '@/assets/llm-icons/qiniu.svg?url'
 import grokColorIcon from '@/assets/llm-icons/grok.svg?url'
@@ -88,8 +89,8 @@ export const modelIcons = {
   'kimi-for-coding': kimiColorIcon,
   kimi: moonshotColorIcon,
   'kimi-cli': moonshotColorIcon,
-  'claude-acp': claudeColorIcon,
-  'claude-code-acp': claudeColorIcon,
+  'claude-acp': claudeAcpColorIcon,
+  'claude-code-acp': claudeAcpColorIcon,
   'codex-acp': openaiColorIcon,
   'openai-codex': openaiCodexColorIcon,
   dimcode: dimcodeColorIcon,
