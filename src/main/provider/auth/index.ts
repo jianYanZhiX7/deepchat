@@ -23,7 +23,12 @@ export class OAuthService implements OAuthServicePort {
   constructor(
     private readonly providerSettings: Pick<
       ProviderSettingsPort,
-      'getProviderById' | 'setProviderById' | 'setProviderModels' | 'batchSetModelStatus'
+      | 'getProviderById'
+      | 'setProviderById'
+      | 'getProviderModels'
+      | 'setProviderModels'
+      | 'batchSetModelStatus'
+      | 'ensureModelStatus'
     >,
     publishEvent: DeepchatEventPublisher
   ) {

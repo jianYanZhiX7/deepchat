@@ -23,8 +23,10 @@ import { createAigotokenPkcePair, createAigotokenState } from './pkce'
 export type AigotokenProviderSettingsPort = {
   getProviderById(id: string): LLM_PROVIDER | undefined
   setProviderById(id: string, provider: LLM_PROVIDER): void
+  getProviderModels(providerId: string): MODEL_META[]
   setProviderModels(providerId: string, models: MODEL_META[]): void
   batchSetModelStatus(providerId: string, modelStatusMap: Record<string, boolean>): void
+  ensureModelStatus(providerId: string, modelId: string, enabled: boolean): void
 }
 
 type PendingBrowserFlow = {
@@ -337,6 +339,75 @@ export class AigotokenAuth {
       }
     } catch (error) {
       console.warn('aigotoken: model fetch failed after auth:', sanitizeError(error))
+    } finally {
+      clearTimeout(timeout)
+    }
+  }
+
+  async syncModels(): Promise<boolean> {
+    const provider = this.providerSettings.getProviderById('aigotoken')
+    if (!provider?.apiKey) {
+      return false
+    }
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), AIGOTOKEN_REQUEST_TIMEOUT_MS)
+
+    try {
+      const response = await fetch(AIGOTOKEN_MODELS_URL, {
+        method: 'GET',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${provider.apiKey}`
+        },
+        signal: controller.signal
+      })
+
+      if (!response.ok) {
+        return false
+      }
+
+      const payload = (await response.json()) as {
+        data?: { id: string; owned_by?: string }[]
+      }
+
+      const fetched = payload.data || []
+      if (fetched.length === 0) {
+        return false
+      }
+
+      const models: MODEL_META[] = fetched.map((model) => ({
+        id: model.id,
+        name: model.id,
+        group: model.owned_by || 'aigotoken',
+        providerId: 'aigotoken',
+        enabled: true
+      }))
+
+      const existingIds = new Set(
+        this.providerSettings.getProviderModels('aigotoken').map((m) => m.id)
+      )
+      const changed =
+        models.length !== existingIds.size || models.some((m) => !existingIds.has(m.id))
+
+      this.providerSettings.setProviderModels('aigotoken', models)
+
+      for (const model of models) {
+        this.providerSettings.ensureModelStatus('aigotoken', model.id, true)
+      }
+
+      if (changed) {
+        this.publishEvent('models.changed', {
+          reason: 'runtime-refresh',
+          providerId: 'aigotoken',
+          version: Date.now()
+        })
+      }
+
+      return changed
+    } catch (error) {
+      console.warn('aigotoken: model sync failed:', sanitizeError(error))
+      return false
     } finally {
       clearTimeout(timeout)
     }

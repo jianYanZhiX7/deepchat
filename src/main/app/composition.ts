@@ -65,6 +65,9 @@ import { TabPresenter } from '../desktop/tab'
 import { DesktopSessionBinding } from '@/desktop/sessionBinding'
 import { TrayPresenter } from '../desktop/tray'
 import { OAuthService } from '../provider/auth'
+import { AigotokenModelMonitor } from '../provider/auth/aigotoken/monitor'
+import { AIGOTOKEN_MODELS_REFRESH_INTERVAL_MS } from '../provider/auth/aigotoken/constants'
+import { getGlobalAigotokenAuth } from '../provider/auth/aigotoken'
 import { FloatingButtonPresenter } from '../desktop/floatingButton'
 import { YoBrowserPresenter } from '../desktop/browser/YoBrowserPresenter'
 import { ComputerUsePreviewPresenter } from '@/desktop/computerUse/ComputerUsePreviewPresenter'
@@ -288,6 +291,7 @@ export async function createMainProcessControl(dependencies: {
   let tabPresenter: TabPresenter
   let trayPresenter: TrayPresenter
   let oauthService: OAuthService
+  let aigotokenMonitor: AigotokenModelMonitor
   let floatingButtonPresenter: FloatingButtonPresenter
   let knowledgeService: KnowledgeServicePort
   let workspaceService: WorkspaceServicePort
@@ -529,12 +533,23 @@ export async function createMainProcessControl(dependencies: {
       getProviderById: (providerId) => providerSettings.getProviderById(providerId),
       setProviderById: (providerId, provider) =>
         providerRuntime.setProviderById(providerId, provider),
+      getProviderModels: (providerId) => providerSettings.getProviderModels(providerId),
       setProviderModels: (providerId, models) =>
         providerSettings.setProviderModels(providerId, models),
       batchSetModelStatus: (providerId, modelStatusMap) =>
-        providerSettings.batchSetModelStatus(providerId, modelStatusMap)
+        providerSettings.batchSetModelStatus(providerId, modelStatusMap),
+      ensureModelStatus: (providerId, modelId, enabled) =>
+        providerSettings.ensureModelStatus(providerId, modelId, enabled)
     },
     publishDeepchatEvent
+  )
+  aigotokenMonitor = new AigotokenModelMonitor(
+    {
+      syncModels: () => getGlobalAigotokenAuth().syncModels(),
+      isAuthenticated: () => getGlobalAigotokenAuth().getStatus().authenticated
+    },
+    AIGOTOKEN_MODELS_REFRESH_INTERVAL_MS,
+    () => dependencies.privacySettings.isEnabled()
   )
   const agentSettings = new AgentSettings(
     dependencies.settingsStore,
@@ -1857,6 +1872,7 @@ export async function createMainProcessControl(dependencies: {
   }
 
   async function destroy(): Promise<void> {
+    await runDestroyStep('aigotokenMonitor.stop', () => aigotokenMonitor.stop())
     await runDestroyStep('providerCatalog.unsubscribe', () => unsubscribeProviderDbCatalog())
     await runDestroyStep('liveDelegationService.stop', () => liveDelegationService.stop())
     await runDestroyStep('cronJobs.destroy', () => cronJobs.destroy())
@@ -2404,6 +2420,20 @@ export async function createMainProcessControl(dependencies: {
           )
       },
       'Failed to start disabled agent tool capability cleanup:'
+    )
+
+    schedule(
+      {
+        id: 'main:aigotoken-model-monitor',
+        target: 'main',
+        phase: 'background',
+        resource: 'io',
+        labelKey: 'startup.main.aigotokenModelMonitor',
+        run: async () => {
+          aigotokenMonitor.start()
+        }
+      },
+      'Failed to start aigotoken model monitor:'
     )
   }
 
