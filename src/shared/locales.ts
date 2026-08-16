@@ -1,4 +1,4 @@
-export const FALLBACK_LOCALE = 'en-US' as const
+export const FALLBACK_LOCALE = 'zh-CN' as const
 
 export const SUPPORTED_LOCALES = [
   'zh-CN',

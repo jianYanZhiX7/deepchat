@@ -6,7 +6,7 @@ export interface TranslationMap {
 }
 
 type TranslationCollection = Partial<Record<SupportedLocale, TranslationMap>> & {
-  'en-US': TranslationMap
+  [K in typeof FALLBACK_LOCALE]: TranslationMap
 }
 
 // Context menu translations

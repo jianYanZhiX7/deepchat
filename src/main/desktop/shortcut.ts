@@ -55,7 +55,7 @@ export class ShortcutPresenter implements IShortcutPresenter {
 
   private getLabels(): TranslationMap {
     const locale =
-      this.settings.getLanguage() || app.getLocale?.() || app.getSystemLocale?.() || 'en-US'
+      this.settings.getLanguage() || 'zh-CN'
     return getContextMenuLabels(locale)
   }
 

@@ -10,7 +10,7 @@ import { resolveRequestedLocale, type RequestedLocale } from '@shared/locales'
 
 export const useLanguageStore = defineStore('language', () => {
   const { locale, setLocaleMessage } = useI18n({ useScope: 'global' })
-  const language = shallowRef<RequestedLocale>('system')
+  const language = shallowRef<RequestedLocale>('zh-CN')
   const configClient = createConfigClient()
   const initialLocale = resolveSupportedLocale(locale.value)
   const dir = shallowRef<'auto' | 'rtl' | 'ltr'>(resolveDocumentDirection(initialLocale))
@@ -28,7 +28,7 @@ export const useLanguageStore = defineStore('language', () => {
 
       setLocaleMessage(resolvedLocale, messages)
       locale.value = resolvedLocale
-      language.value = resolveRequestedLocale(state.requestedLanguage || 'system')
+      language.value = resolveRequestedLocale(state.requestedLanguage || 'zh-CN')
       dir.value =
         state.direction === 'rtl' || resolveDocumentDirection(resolvedLocale) === 'rtl'
           ? 'rtl'

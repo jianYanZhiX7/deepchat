@@ -7,38 +7,44 @@ import { app } from 'electron'
 
 export function createSettingsStore(): SettingsStore {
   const userDataPath = app.getPath('userData')
+  const electronStore = new ElectronStore<Record<string, unknown>>({
+    name: 'app-settings',
+    defaults: {
+      language: 'zh-CN',
+      providers: [],
+      closeToQuit: false,
+      proxyMode: 'system',
+      customProxyUrl: '',
+      artifactsEffectEnabled: true,
+      searchPreviewEnabled: true,
+      contentProtectionEnabled: false,
+      privacyModeEnabled: false,
+      syncEnabled: false,
+      syncFolderPath: path.join(userDataPath, 'sync'),
+      lastSyncTime: 0,
+      copyWithCotEnabled: true,
+      autoCompactionEnabled: true,
+      autoCompactionTriggerThreshold: 80,
+      autoCompactionRetainRecentPairs: 2,
+      loggingEnabled: false,
+      floatingButtonEnabled: false,
+      fontFamily: '',
+      codeFontFamily: '',
+      default_system_prompt: '',
+      skillsPath: path.join(app.getPath('home'), '.deepchat', 'skills'),
+      enableSkills: true,
+      skillDraftSuggestionsEnabled: false,
+      appVersion: app.getVersion(),
+      hooksNotifications: { hooks: [] }
+    }
+  })
+
+  if (electronStore.get('language') === 'system') {
+    electronStore.set('language', 'zh-CN')
+  }
+
   return new SettingsStore(
-    new ElectronStore<Record<string, unknown>>({
-      name: 'app-settings',
-      defaults: {
-        language: 'system',
-        providers: [],
-        closeToQuit: false,
-        proxyMode: 'system',
-        customProxyUrl: '',
-        artifactsEffectEnabled: true,
-        searchPreviewEnabled: true,
-        contentProtectionEnabled: false,
-        privacyModeEnabled: false,
-        syncEnabled: false,
-        syncFolderPath: path.join(userDataPath, 'sync'),
-        lastSyncTime: 0,
-        copyWithCotEnabled: true,
-        autoCompactionEnabled: true,
-        autoCompactionTriggerThreshold: 80,
-        autoCompactionRetainRecentPairs: 2,
-        loggingEnabled: false,
-        floatingButtonEnabled: false,
-        fontFamily: '',
-        codeFontFamily: '',
-        default_system_prompt: '',
-        skillsPath: path.join(app.getPath('home'), '.deepchat', 'skills'),
-        enableSkills: true,
-        skillDraftSuggestionsEnabled: false,
-        appVersion: app.getVersion(),
-        hooksNotifications: { hooks: [] }
-      }
-    }) as unknown as StoreLike<Record<string, unknown>>
+    electronStore as unknown as StoreLike<Record<string, unknown>>
   )
 }
 

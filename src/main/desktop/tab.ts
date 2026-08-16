@@ -17,7 +17,7 @@ import {
 import { join } from 'path'
 import contextMenu from './contextMenu'
 import { getContextMenuLabels } from '@shared/i18n'
-import { app } from 'electron'
+import { FALLBACK_LOCALE } from '@shared/locales'
 import { addWatermarkToNativeImage } from '@/lib/watermark'
 import { stitchImagesVertically } from '@/lib/scrollCapture'
 import { openExternalUrl } from '@/lib/externalUrl'
@@ -730,7 +730,7 @@ export class TabPresenter implements ITabPresenter {
       this.tabContextMenuDisposers.delete(tabId)
     }
 
-    const lang = app.getLocale()
+    const lang = FALLBACK_LOCALE
     const labels = await getContextMenuLabels(lang)
 
     const disposer = contextMenu({

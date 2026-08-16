@@ -53,18 +53,18 @@ describe('native menu translations', () => {
     })
   })
 
-  it('keeps available base-language translations and fills missing labels from English', () => {
+  it('keeps available base-language translations and fills missing labels from the fallback locale', () => {
     expect(getContextMenuLabels('ja-JP')).toMatchObject({
       copy: 'コピー',
-      file: 'File'
+      file: '文件'
     })
     expect(getContextMenuLabels('ko-KR')).toMatchObject({
       copy: '복사',
-      file: 'File'
+      file: '文件'
     })
     expect(getContextMenuLabels('fr-CA')).toMatchObject({
       copy: 'Copier',
-      file: 'File'
+      file: '文件'
     })
   })
 
@@ -74,8 +74,8 @@ describe('native menu translations', () => {
       file: 'Datei'
     })
     expect(getContextMenuLabels('unknown')).toMatchObject({
-      copy: 'Copy',
-      file: 'File'
+      copy: '复制',
+      file: '文件'
     })
   })
 })

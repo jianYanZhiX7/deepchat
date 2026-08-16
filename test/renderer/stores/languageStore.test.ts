@@ -129,7 +129,7 @@ describe('language store', () => {
     expect(languageMocks.removeListener).toHaveBeenCalledOnce()
   })
 
-  it('preserves system mode when the requested language is empty', async () => {
+  it('falls back to zh-CN when the requested language is empty', async () => {
     languageMocks.getLanguageState.mockResolvedValue({
       requestedLanguage: '',
       locale: 'fr-FR',
@@ -140,7 +140,7 @@ describe('language store', () => {
     await flushPromises()
 
     expect(i18n.global.locale.value).toBe('fr-FR')
-    expect(store.language).toBe('system')
+    expect(store.language).toBe('zh-CN')
   })
 
   it('keeps the newest language event when an older load finishes later', async () => {

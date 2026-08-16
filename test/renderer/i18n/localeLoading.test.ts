@@ -57,7 +57,7 @@ describe('renderer locale loading', () => {
 
   it('loads only the resolved locale and fallback before creating i18n', async () => {
     const catalog: Record<string, RendererLocaleMessages> = {
-      'en-US': createMessages('English'),
+      'zh-CN': createMessages('Chinese'),
       'fr-FR': createMessages('Francais')
     }
     const loadMessages = vi.fn(async (locale: string) => catalog[locale])
@@ -72,17 +72,17 @@ describe('renderer locale loading', () => {
     })
 
     expect(loadMessages).toHaveBeenCalledTimes(2)
-    expect(loadMessages).toHaveBeenCalledWith('en-US')
+    expect(loadMessages).toHaveBeenCalledWith('zh-CN')
     expect(loadMessages).toHaveBeenCalledWith('fr-FR')
     expect(i18n.global.locale.value).toBe('fr-FR')
-    expect(i18n.global.availableLocales).toEqual(['en-US', 'fr-FR'])
+    expect([...i18n.global.availableLocales].sort()).toEqual(['fr-FR', 'zh-CN'])
     expect(languageState.locale).toBe('fr-FR')
   })
 
-  it('falls back to English when the requested locale fails to load', async () => {
+  it('falls back to the fallback locale when the requested locale fails to load', async () => {
     const onError = vi.fn()
     const loadMessages = vi.fn(async (locale: string) => {
-      if (locale === 'en-US') return createMessages('English')
+      if (locale === FALLBACK_LOCALE) return createMessages('Fallback')
       throw new Error('missing locale chunk')
     })
 
@@ -96,15 +96,15 @@ describe('renderer locale loading', () => {
       onError
     })
 
-    expect(i18n.global.locale.value).toBe('en-US')
-    expect(i18n.global.getLocaleMessage('en-US')).toEqual(createMessages('English'))
-    expect(languageState).toMatchObject({ locale: 'en-US', direction: 'auto' })
+    expect(i18n.global.locale.value).toBe(FALLBACK_LOCALE)
+    expect(i18n.global.getLocaleMessage(FALLBACK_LOCALE)).toEqual(createMessages('Fallback'))
+    expect(languageState).toMatchObject({ locale: FALLBACK_LOCALE, direction: 'auto' })
     expect(onError).toHaveBeenCalledWith('Failed to load locale fa-IR:', expect.any(Error))
   })
 
   it('boots with the fallback when reading language state fails', async () => {
     const onError = vi.fn()
-    const loadMessages = vi.fn(async () => createMessages('English'))
+    const loadMessages = vi.fn(async () => createMessages('Fallback'))
 
     const { i18n, languageState } = await createRendererI18n({
       getLanguageState: async () => {
@@ -115,11 +115,11 @@ describe('renderer locale loading', () => {
     })
 
     expect(loadMessages).toHaveBeenCalledOnce()
-    expect(loadMessages).toHaveBeenCalledWith('en-US')
-    expect(i18n.global.locale.value).toBe('en-US')
+    expect(loadMessages).toHaveBeenCalledWith(FALLBACK_LOCALE)
+    expect(i18n.global.locale.value).toBe(FALLBACK_LOCALE)
     expect(languageState).toEqual({
-      requestedLanguage: 'en-US',
-      locale: 'en-US',
+      requestedLanguage: FALLBACK_LOCALE,
+      locale: FALLBACK_LOCALE,
       direction: 'auto'
     })
     expect(onError).toHaveBeenCalledWith(

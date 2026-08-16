@@ -23,7 +23,7 @@ export class DesktopSettings {
   ) {}
 
   getRequestedLanguage(): RequestedLocale {
-    return resolveRequestedLocale(this.settings.get<string>('language') || 'system')
+    return resolveRequestedLocale(this.settings.get<string>('language') || 'zh-CN')
   }
 
   getLanguage(): SupportedLocale {

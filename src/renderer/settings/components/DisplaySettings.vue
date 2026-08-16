@@ -338,7 +338,7 @@ const { t } = useI18n()
 const { themeMode } = storeToRefs(themeStore)
 
 // --- Language Settings ---
-const selectedLanguage = ref<RequestedLocale>('system')
+const selectedLanguage = ref<RequestedLocale>('zh-CN')
 const languageOptions = [
   { value: 'system', label: t('common.languageSystem') || 'System' },
   ...SUPPORTED_LOCALES.map((value) => ({ value, label: LOCALE_DISPLAY_NAMES[value] }))
