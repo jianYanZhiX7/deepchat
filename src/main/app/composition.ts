@@ -842,10 +842,9 @@ export async function createMainProcessControl(dependencies: {
     publishDeepchatEvent,
     {
       isDeepChatAgent: async (agentId) =>
-        (await agentSettings.getAgent(agentId))?.type === 'deepchat',
+        (await agentSettings.getAgent(agentId)) !== null,
       listDeepChatAgents: async () =>
         (await agentSettings.listAgents())
-          .filter((agent) => agent.type === 'deepchat')
           .map((agent) => ({
             id: agent.id,
             enabledSkillNames: agent.config?.enabledSkillNames,
