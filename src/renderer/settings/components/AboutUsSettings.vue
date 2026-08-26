@@ -142,7 +142,7 @@
         </Button>
 
         <Button
-          v-if="!upgrade.showManualDownloadOptions"
+          v-if="!HIDE_CHECK_FOR_UPDATES && !upgrade.showManualDownloadOptions"
           variant="outline"
           size="sm"
           class="mb-2 text-xs"
@@ -244,6 +244,7 @@ import { Spinner } from '@shadcn/components/ui/spinner'
 import NodeRenderer from 'markstream-vue'
 import { nanoid } from 'nanoid'
 import { useUpgradeStore } from '@/stores/upgrade'
+import { HIDE_CHECK_FOR_UPDATES } from '@shared/buildFlags'
 import { useLanguageStore } from '@/stores/language'
 import type { AcceptableValue } from 'reka-ui'
 import { useThemeStore } from '@/stores/theme'

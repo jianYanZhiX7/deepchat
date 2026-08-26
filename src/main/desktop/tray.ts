@@ -1,6 +1,7 @@
 import { Tray, Menu, app, nativeImage, NativeImage } from 'electron'
 import * as path from 'path'
 import { getContextMenuLabels } from '@shared/i18n'
+import { HIDE_CHECK_FOR_UPDATES } from '@shared/buildFlags'
 import type { IWindowPresenter } from '@shared/types/desktop'
 import type { DesktopSettings } from './settings'
 
@@ -47,12 +48,16 @@ export class TrayPresenter {
           this.windowPresenter.toggleMainWindowVisibility()
         }
       },
-      {
-        label: labels.checkForUpdates,
-        click: () => {
-          void this.openUpdateSettings()
-        }
-      },
+      ...(HIDE_CHECK_FOR_UPDATES
+        ? []
+        : [
+            {
+              label: labels.checkForUpdates,
+              click: () => {
+                void this.openUpdateSettings()
+              }
+            }
+          ]),
       {
         label: labels.quit,
         click: async () => {

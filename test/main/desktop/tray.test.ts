@@ -13,6 +13,10 @@ const windowPresenterMock = vi.hoisted(() => ({
   sendSettingsCheckForUpdates: vi.fn()
 }))
 
+const buildFlagsState = vi.hoisted(() => ({
+  hideCheckForUpdates: true
+}))
+
 vi.mock('electron', () => ({
   app: {
     getAppPath: vi.fn(() => '/mock/app'),
@@ -32,12 +36,23 @@ vi.mock('electron', () => ({
   }))
 }))
 
+vi.mock('@shared/buildFlags', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/buildFlags')>()
+  return {
+    ...actual,
+    get HIDE_CHECK_FOR_UPDATES() {
+      return buildFlagsState.hideCheckForUpdates
+    }
+  }
+})
+
 describe('TrayPresenter', () => {
   const originalPlatform = process.platform
 
   beforeEach(() => {
     vi.resetModules()
     vi.clearAllMocks()
+    buildFlagsState.hideCheckForUpdates = true
     Object.defineProperty(process, 'platform', {
       value: originalPlatform
     })
@@ -68,5 +83,30 @@ describe('TrayPresenter', () => {
     clickHandler()
 
     expect(windowPresenterMock.toggleMainWindowVisibility).toHaveBeenCalledWith(true)
+  })
+
+  it('omits the check for updates tray item when HIDE_CHECK_FOR_UPDATES is true', async () => {
+    Object.defineProperty(process, 'platform', {
+      value: 'win32'
+    })
+    const { TrayPresenter } = await import('@/desktop/tray')
+
+    new TrayPresenter({ getLanguage: vi.fn(() => 'zh-CN') }, windowPresenterMock as any).init()
+
+    const template = buildFromTemplateMock.mock.calls.at(-1)?.[0] as Array<{ label?: string }>
+    expect(template.map((item) => item.label)).not.toContain('检查更新')
+  })
+
+  it('includes the check for updates tray item when HIDE_CHECK_FOR_UPDATES is false', async () => {
+    buildFlagsState.hideCheckForUpdates = false
+    Object.defineProperty(process, 'platform', {
+      value: 'win32'
+    })
+    const { TrayPresenter } = await import('@/desktop/tray')
+
+    new TrayPresenter({ getLanguage: vi.fn(() => 'zh-CN') }, windowPresenterMock as any).init()
+
+    const template = buildFromTemplateMock.mock.calls.at(-1)?.[0] as Array<{ label?: string }>
+    expect(template.map((item) => item.label)).toContain('检查更新')
   })
 })

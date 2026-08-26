@@ -48,6 +48,10 @@ const windowClientMock = vi.hoisted(() => ({
   })
 }))
 
+const buildFlagsState = vi.hoisted(() => ({
+  hideCheckForUpdates: false
+}))
+
 const upgradeStoreMock = {
   shouldShowUpdateNotes: true,
   updateInfo: {
@@ -80,6 +84,16 @@ vi.mock('@api/BrowserClient', () => ({
 vi.mock('@api/WindowClient', () => ({
   createWindowClient: () => windowClientMock
 }))
+
+vi.mock('@shared/buildFlags', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@shared/buildFlags')>()
+  return {
+    ...actual,
+    get HIDE_CHECK_FOR_UPDATES() {
+      return buildFlagsState.hideCheckForUpdates
+    }
+  }
+})
 
 vi.mock('@/stores/upgrade', () => ({
   useUpgradeStore: () => upgradeStoreMock
@@ -135,6 +149,7 @@ vi.mock('vue-router', () => ({
 describe('AboutUsSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    buildFlagsState.hideCheckForUpdates = false
     configClientMock.getUpdateChannel.mockReset()
     configClientMock.setUpdateChannel.mockReset()
     deviceClientMock.getAppVersion.mockReset()
@@ -429,5 +444,43 @@ describe('AboutUsSettings', () => {
     expect(wrapper.text()).not.toContain('模拟首次进入引导')
     expect(wrapper.text()).not.toContain('创建长会话Mock数据')
     expect(windowClientMock.startGuidedOnboarding).not.toHaveBeenCalled()
+  })
+
+  it('hides the check for updates button when HIDE_CHECK_FOR_UPDATES is true', async () => {
+    buildFlagsState.hideCheckForUpdates = true
+    upgradeStoreMock.showManualDownloadOptions = false
+    upgradeStoreMock.updateError = null
+    upgradeStoreMock.updateState = 'idle'
+
+    const { default: AboutUsSettings } =
+      await import('../../../src/renderer/settings/components/AboutUsSettings.vue')
+
+    const wrapper = mount(AboutUsSettings, {
+      global: {
+        stubs: {
+          Button: buttonStub,
+          Icon: true,
+          Dialog: passthroughStub('Dialog'),
+          DialogContent: passthroughStub('DialogContent'),
+          DialogDescription: passthroughStub('DialogDescription'),
+          DialogFooter: passthroughStub('DialogFooter'),
+          DialogHeader: passthroughStub('DialogHeader'),
+          DialogTitle: passthroughStub('DialogTitle'),
+          Select: selectStub,
+          SelectContent: passthroughStub('SelectContent'),
+          SelectItem: passthroughStub('SelectItem'),
+          SelectTrigger: passthroughStub('SelectTrigger'),
+          SelectValue: passthroughStub('SelectValue'),
+          NodeRenderer: passthroughStub('NodeRenderer')
+        }
+      }
+    })
+
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button').map((button) => button.text())
+    expect(buttons).not.toContain('检查更新')
+
+    wrapper.unmount()
   })
 })
