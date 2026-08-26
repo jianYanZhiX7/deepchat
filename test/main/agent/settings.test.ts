@@ -322,6 +322,7 @@ describe('AgentSettings migrations', () => {
   it('seeds required disabled tools into explicit agent configs once', () => {
     const repository = {
       ensureBuiltinDeepChatAgent: vi.fn(),
+      ensureBuiltinDeepChatAgents: vi.fn(),
       listAgents: vi.fn(() => [
         { id: BUILTIN_DEEPCHAT_AGENT_ID },
         { id: 'deepchat-custom' },

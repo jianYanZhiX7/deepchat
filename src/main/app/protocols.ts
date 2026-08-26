@@ -204,6 +204,54 @@ export async function registerProtocols(
     }
   })
 
+  // Register 'agentpreset' protocol for built-in agent preset avatars
+  protocol.handle('agentpreset', async (request) => {
+    const filePath = request.url.slice('agentpreset://'.length)
+    const candidates = is.dev
+      ? [path.join(app.getAppPath(), 'resources', 'agent-presets')]
+      : [
+          path.join(process.resourcesPath, 'app.asar.unpacked', 'resources', 'agent-presets'),
+          path.join(process.resourcesPath, 'resources', 'agent-presets'),
+          path.join(process.resourcesPath, 'agent-presets')
+        ]
+    const baseDir = candidates.find((candidate) => fs.existsSync(candidate)) ?? candidates[0]
+    const fullPath = resolvePathInsideRoot(baseDir, filePath)
+    if (!fullPath) {
+      return new Response('Forbidden', {
+        status: 403,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+
+    try {
+      const stat = await fsp.stat(fullPath)
+      if (stat.isDirectory()) {
+        return new Response(`File not found: ${filePath}`, {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' }
+        })
+      }
+
+      return await createStreamingResponse(fullPath, stat, {
+        headers: { 'Content-Type': getMimeTypeForPath(fullPath) }
+      })
+    } catch (error: unknown) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+        return new Response(`File not found: ${filePath}`, {
+          status: 404,
+          headers: { 'Content-Type': 'text/plain' }
+        })
+      }
+
+      console.error('registerProtocols: Error handling agentpreset request:', error)
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      return new Response(`Server error: ${errorMessage}`, {
+        status: 500,
+        headers: { 'Content-Type': 'text/plain' }
+      })
+    }
+  })
+
   // Register 'imgcache' protocol for handling image cache
   protocol.handle('imgcache', async (request) => {
     const filePath = request.url.slice('imgcache://'.length)

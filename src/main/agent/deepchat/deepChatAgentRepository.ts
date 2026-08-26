@@ -196,6 +196,37 @@ export class DeepChatAgentRepository {
     return this.dependencies.rows.get(id) as AgentRow
   }
 
+  ensureBuiltinAgent(input: {
+    id: string
+    name: string
+    description?: string
+    icon?: string | null
+    avatar?: AgentAvatar | null
+    config?: DeepChatAgentConfig | null
+  }): AgentRow | null {
+    const { rows } = this.dependencies
+    const existing = rows.get(input.id)
+    if (existing) {
+      if (!existing.icon && input.icon) {
+        rows.update(input.id, { icon: sanitizeString(input.icon) })
+      }
+      return rows.get(input.id) ?? null
+    }
+    rows.create({
+      id: input.id,
+      agentType: 'deepchat',
+      source: 'builtin',
+      name: input.name.trim() || input.id,
+      enabled: true,
+      protected: true,
+      description: sanitizeString(input.description),
+      icon: sanitizeString(input.icon),
+      avatarJson: stringifyJson(input.avatar ?? null),
+      configJson: stringifyJson(input.config ? prepareConfigWrite(input.config) : null)
+    })
+    return rows.get(input.id) ?? null
+  }
+
   update(agentId: string, updates: UpdateDeepChatAgentInput): AgentRow | null {
     const { rows } = this.dependencies
     const row = rows.get(agentId)
@@ -272,7 +303,7 @@ export class DeepChatAgentRepository {
       const legacySkillAllowLists: Record<string, string[]> = {}
 
       for (const row of agentRows) {
-        if (row.id === BUILTIN_DEEPCHAT_AGENT_ID) continue
+        if (row.source === 'builtin') continue
 
         const storedConfig = parseDeepChatConfigRow(row)
         const legacyEffectiveConfig = mergeDeepChatConfig(

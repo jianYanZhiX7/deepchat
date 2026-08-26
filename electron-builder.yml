@@ -51,6 +51,9 @@ extraResources:
   - from: ./resources/skills/
     to: app.asar.unpacked/resources/skills
     filter: ['**/*']
+  - from: ./resources/agent-presets/
+    to: app.asar.unpacked/resources/agent-presets
+    filter: ['**/*']
   - from: ./resources/acp-npm-cache/
     to: app.asar.unpacked/resources/acp-npm-cache
     filter: ['**/*']

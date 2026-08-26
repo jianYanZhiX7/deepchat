@@ -906,4 +906,116 @@ describe('DeepChatAgentRepository', () => {
       subagents: []
     })
   })
+
+  it('creates builtin preset Agents only once and never overwrites their edits', () => {
+    const { repository, rows } = createMutableRepository()
+
+    const created = repository.ensureBuiltinAgent({
+      id: 'deepchat-code-expert',
+      name: '代码专家',
+      description: '专注于软件工程与代码任务的助手',
+      config: {
+        systemPrompt: 'You are a code expert.',
+        enabledSkillNames: ['code-review', 'git-commit']
+      }
+    })
+
+    expect(created?.id).toBe('deepchat-code-expert')
+    expect(rows.get('deepchat-code-expert')).toMatchObject({
+      agent_type: 'deepchat',
+      source: 'builtin',
+      enabled: 1,
+      protected: 1
+    })
+
+    repository.update('deepchat-code-expert', { name: '我的代码专家' })
+
+    repository.ensureBuiltinAgent({
+      id: 'deepchat-code-expert',
+      name: '代码专家',
+      config: { systemPrompt: 'Original', enabledSkillNames: ['code-review'] }
+    })
+
+    expect(rows.size).toBe(1)
+    expect(rows.get('deepchat-code-expert')).toMatchObject({
+      name: '我的代码专家',
+      description: '专注于软件工程与代码任务的助手'
+    })
+    expect(JSON.parse(rows.get('deepchat-code-expert').config_json)).toMatchObject({
+      systemPrompt: 'You are a code expert.',
+      enabledSkillNames: ['code-review', 'git-commit']
+    })
+  })
+
+  it('backfills a missing builtin preset icon without overwriting an existing one', () => {
+    const now = Date.now()
+    const makeRow = (id: string, icon: string | null) => ({
+      id,
+      agent_type: 'deepchat',
+      source: 'builtin',
+      name: id,
+      enabled: 1,
+      protected: 1,
+      description: null,
+      icon,
+      avatar_json: null,
+      config_json: '{}',
+      state_json: null,
+      created_at: now,
+      updated_at: now
+    })
+    const { repository, rows } = createMutableRepository([
+      makeRow('missing-icon', null),
+      makeRow('custom-icon', 'custom.svg')
+    ])
+
+    repository.ensureBuiltinAgent({
+      id: 'missing-icon',
+      name: 'Missing',
+      icon: 'agentpreset://missing-icon.svg'
+    })
+    repository.ensureBuiltinAgent({
+      id: 'custom-icon',
+      name: 'Custom',
+      icon: 'agentpreset://custom-icon.svg'
+    })
+
+    expect(rows.get('missing-icon').icon).toBe('agentpreset://missing-icon.svg')
+    expect(rows.get('custom-icon').icon).toBe('custom.svg')
+  })
+
+  it('does not materialize protected builtin preset Agents during legacy config migration', () => {
+    const now = Date.now()
+    const makeRow = (id: string, source: string, configJson: string) => ({
+      id,
+      agent_type: 'deepchat',
+      source,
+      name: id,
+      enabled: 1,
+      protected: source === 'builtin' ? 1 : 0,
+      description: null,
+      icon: null,
+      avatar_json: null,
+      config_json: configJson,
+      state_json: null,
+      created_at: now,
+      updated_at: now
+    })
+    const { repository, rows } = createMutableRepository([
+      makeRow('deepchat', 'builtin', JSON.stringify({ systemPrompt: 'Builtin' })),
+      makeRow(
+        'deepchat-code-expert',
+        'builtin',
+        JSON.stringify({ systemPrompt: 'Code expert', enabledSkillNames: ['code-review'] })
+      ),
+      makeRow('manual-agent', 'manual', JSON.stringify({ systemPrompt: 'Manual' }))
+    ])
+
+    const result = repository.materializeLegacyInheritedConfigs()
+
+    expect(result.materializedAgentIds).toEqual(['manual-agent'])
+    expect(rows.get('deepchat-code-expert').config_json).toBe(
+      JSON.stringify({ systemPrompt: 'Code expert', enabledSkillNames: ['code-review'] })
+    )
+  })
 })

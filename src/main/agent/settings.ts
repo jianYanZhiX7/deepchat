@@ -12,6 +12,7 @@ import type {
 } from '@shared/types/acp'
 import type {
   Agent,
+  AgentPresetDefinition,
   AgentType,
   CreateDeepChatAgentInput,
   DeepChatAgentConfig,
@@ -29,6 +30,7 @@ import {
   normalizeAutoCompactionTriggerThreshold
 } from '@/agent/deepchat/defaults'
 import { AgentRepository, BUILTIN_DEEPCHAT_AGENT_ID } from '@/agent/repository'
+import { loadAgentPresetDefinitions } from '@/agent/presets'
 import type { AgentLifecycleGatePort } from '@/agent/lifecycleGate'
 
 const UNIFIED_AGENTS_MIGRATION_VERSION = 3
@@ -175,6 +177,7 @@ export class AgentSettings implements AgentSettingsPort {
   private readonly registry: AcpRegistryService
   private readonly launchSpecs: AcpLaunchSpecService
   private deleteDeepChatAgentTasks?: Map<string, Promise<DeleteDeepChatAgentResult>>
+  private builtinPresetDefinitions: AgentPresetDefinition[] = []
 
   constructor(
     private readonly settings: SettingsStore,
@@ -596,12 +599,18 @@ export class AgentSettings implements AgentSettingsPort {
   private getPendingAgentSkillCleanupIds(): string[] {
     const stored = this.settings.get<unknown>(PENDING_AGENT_SKILL_CLEANUP_KEY)
     if (!Array.isArray(stored)) return []
+    const builtinPresetIds = new Set(
+      (this.builtinPresetDefinitions ?? []).map((preset) => preset.id)
+    )
     return Array.from(
       new Set(
         stored
           .filter((agentId): agentId is string => typeof agentId === 'string')
           .map((agentId) => agentId.trim())
-          .filter((agentId) => agentId && agentId !== BUILTIN_DEEPCHAT_AGENT_ID)
+          .filter(
+            (agentId) =>
+              agentId && agentId !== BUILTIN_DEEPCHAT_AGENT_ID && !builtinPresetIds.has(agentId)
+          )
       )
     ).sort()
   }
@@ -713,6 +722,8 @@ export class AgentSettings implements AgentSettingsPort {
       name: 'DeepChat',
       config: this.buildLegacyBuiltinDeepChatConfig()
     })
+    this.builtinPresetDefinitions = loadAgentPresetDefinitions()
+    this.repository.ensureBuiltinDeepChatAgents(this.builtinPresetDefinitions)
 
     let migratedVersion = this.settings.get<number>('unifiedAgentsMigrationVersion') ?? 0
     let registryAgentsSynced = false
@@ -751,8 +762,9 @@ export class AgentSettings implements AgentSettingsPort {
 
   private materializeIndependentDeepChatAgentConfigs(): void {
     const result = this.repository.materializeLegacyInheritedDeepChatConfigs()
+    const presetIds = (this.builtinPresetDefinitions ?? []).map((preset) => preset.id)
     this.skillMigrationSettings.freezeLegacyMigrationTargets(
-      [...result.materializedAgentIds].sort(),
+      [...new Set([...result.materializedAgentIds, ...presetIds])].sort(),
       result.legacySkillAllowLists ?? {}
     )
     if (result.recoveredAgentIds.length > 0) {

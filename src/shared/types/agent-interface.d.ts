@@ -669,6 +669,15 @@ export interface UpdateDeepChatAgentInput {
   config?: DeepChatAgentConfig | null
 }
 
+export interface AgentPresetDefinition {
+  id: string
+  name: string
+  description?: string
+  icon?: string
+  systemPrompt?: string
+  enabledSkillNames?: string[] | null
+}
+
 export interface Agent {
   id: string
   name: string

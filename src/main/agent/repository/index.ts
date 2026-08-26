@@ -21,6 +21,7 @@ import type {
 import type {
   Agent,
   AgentAvatar,
+  AgentPresetDefinition,
   CreateDeepChatAgentInput,
   DeepChatAgentConfig,
   UpdateDeepChatAgentInput
@@ -95,6 +96,22 @@ export class AgentRepository {
     return mapCatalogRecordToLegacyAgent(
       decodeAgentCatalogRow(this.deepchat.ensureBuiltin(defaults))
     )
+  }
+
+  ensureBuiltinDeepChatAgents(presets: AgentPresetDefinition[]): void {
+    for (const preset of presets) {
+      if (preset.id === BUILTIN_DEEPCHAT_AGENT_ID) continue
+      this.deepchat.ensureBuiltinAgent({
+        id: preset.id,
+        name: preset.name,
+        description: preset.description,
+        icon: preset.icon,
+        config: {
+          systemPrompt: preset.systemPrompt ?? '',
+          enabledSkillNames: preset.enabledSkillNames ?? null
+        }
+      })
+    }
   }
 
   createDeepChatAgent(input: CreateDeepChatAgentInput): Agent {

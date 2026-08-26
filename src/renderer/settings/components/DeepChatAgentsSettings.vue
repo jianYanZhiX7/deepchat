@@ -1054,9 +1054,14 @@ const groupedTools = computed<ToolGroup[]>(() => {
 const deepchatAgents = computed(() =>
   allAgents.value
     .filter((agent) => agent.type === 'deepchat')
-    .sort((a, b) =>
-      a.id === 'deepchat' ? -1 : b.id === 'deepchat' ? 1 : a.name.localeCompare(b.name)
-    )
+    .sort((a, b) => {
+      const aProtected = a.protected ? 1 : 0
+      const bProtected = b.protected ? 1 : 0
+      if (aProtected !== bProtected) return bProtected - aProtected
+      if (a.id === 'deepchat') return -1
+      if (b.id === 'deepchat') return 1
+      return a.name.localeCompare(b.name)
+    })
 )
 const isAvailableSubagentTargetAgent = (agent: Agent) => {
   if (agent.type === 'deepchat') {

@@ -721,6 +721,18 @@ export const DeepChatAgentConfigSchema = z.looseObject({
   defaultProjectPath: z.string().nullable().optional()
 })
 
+export const AgentPresetDefinitionSchema = z.object({
+  id: z
+    .string()
+    .regex(/^[A-Za-z0-9][A-Za-z0-9._-]*$/)
+    .min(1),
+  name: z.string().min(1),
+  description: z.string().optional(),
+  icon: z.string().optional(),
+  systemPrompt: z.string().optional(),
+  enabledSkillNames: z.array(z.string()).nullable().optional()
+})
+
 export const ConfigValueSchema = z.union([
   z.boolean(),
   z.number(),
