@@ -240,7 +240,7 @@ export const DEFAULT_PROVIDERS: LLM_PROVIDER_BASE[] = [
     apiType: 'acp',
     apiKey: '',
     baseUrl: '',
-    enable: true,
+    enable: false,
     websites: {
       official: 'https://agentclientprotocol.com',
       apiKey: '',

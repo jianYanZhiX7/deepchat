@@ -175,7 +175,7 @@ export class AcpCatalogSettings {
     this.store = new ElectronStore<InternalStore>({
       name: 'acp_agents',
       defaults: {
-        enabled: true,
+        enabled: false,
         version: ACP_STORE_VERSION,
         registryStates: {},
         manualAgents: [],

@@ -218,7 +218,7 @@ describe('AcpAgentRepository', () => {
     })
   })
 
-  it('enables claude-acp by default on first registry sync while leaving other agents disabled', () => {
+  it('leaves registry agents disabled by default while preserving an existing enabled state', () => {
     const rows = new Map<string, any>()
     const agentsTable = {
       get: (id: string) => rows.get(id),
@@ -261,9 +261,10 @@ describe('AcpAgentRepository', () => {
       }
     ])
 
-    expect(rows.get('claude-acp').enabled).toBe(1)
+    expect(rows.get('claude-acp').enabled).toBe(0)
     expect(rows.get('cline').enabled).toBe(0)
 
+    rows.get('claude-acp').enabled = 1
     repository.syncRegistry([
       {
         id: 'claude-acp',
@@ -273,6 +274,7 @@ describe('AcpAgentRepository', () => {
       }
     ])
     expect(rows.get('claude-acp').enabled).toBe(1)
+
     rows.get('claude-acp').enabled = 0
     repository.syncRegistry([
       {
