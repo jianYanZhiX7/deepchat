@@ -611,12 +611,13 @@ describe('WindowSideBar agent switch', () => {
       expect(wrapper.text()).toContain('ACP A')
       expect(sessionStore.getPinnedSessions).toHaveBeenCalledWith('acp-a')
       expect(sessionStore.getFilteredGroups).toHaveBeenCalledWith('acp-a')
-      expect(
-        wrapper
-          .get('[data-testid="window-sidebar-aigotoken-button"]')
-          .find('agent-avatar-stub')
-          .exists()
-      ).toBe(true)
+      const aigotokenIcon = wrapper
+        .get('[data-testid="window-sidebar-aigotoken-button"]')
+        .find('img')
+      expect(aigotokenIcon.exists()).toBe(true)
+      expect(aigotokenIcon.attributes('src')).toBe(
+        (await import('@/assets/llm-icons/aigotoken.svg?url')).default
+      )
     },
     TEST_TIMEOUT_MS
   )

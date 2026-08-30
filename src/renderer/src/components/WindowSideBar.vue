@@ -12,16 +12,10 @@
           <TooltipTrigger as-child>
             <Button
               data-testid="window-sidebar-aigotoken-button"
-              class="flex items-center justify-center w-9 h-9 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
+              class="flex items-center justify-center w-10 h-10 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
               @click="openAigotokenWebsite"
             >
-              <AgentAvatar v-if="sidebarAgent" :agent="sidebarAgent" class-name="w-4 h-4" />
-              <ModelIcon
-                v-else
-                model-id="aigotoken"
-                custom-class="w-4 h-4"
-                :is-dark="themeStore.isDark"
-              />
+              <img :src="aigotokenIcon" alt="aigotoken" class="w-6 h-6 shrink-0 object-contain" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">aigotoken.com</TooltipContent>
@@ -649,7 +643,7 @@ import { useSpotlightStore } from '@/stores/ui/spotlight'
 import { usePluginCatalogStore } from '@/stores/pluginCatalog'
 import type { RemoteChannel, RemoteRuntimeState } from '@shared/types/remote'
 import AgentAvatar from './icons/AgentAvatar.vue'
-import ModelIcon from './icons/ModelIcon.vue'
+import aigotokenIcon from '@/assets/llm-icons/aigotoken.svg?url'
 import WindowSideBarSessionItem from './WindowSideBarSessionItem.vue'
 import { useI18n } from 'vue-i18n'
 import { useSidebarStore } from '@/stores/ui/sidebar'
@@ -769,19 +763,6 @@ const selectedAgentName = computed(() => {
     (agent) => agent.id === sidebarSelectedAgentId.value
   )
   return matchedAgent?.name ?? t('chat.sidebar.allAgents')
-})
-
-const sidebarAgent = computed(() => {
-  const selectedAgentId = sidebarSelectedAgentId.value
-  if (selectedAgentId === null) {
-    return null
-  }
-
-  if (agentStore.selectedAgent?.id === selectedAgentId) {
-    return agentStore.selectedAgent
-  }
-
-  return agentStore.enabledAgents.find((agent) => agent.id === selectedAgentId) ?? null
 })
 
 const remoteChannelIds = computed(() =>
