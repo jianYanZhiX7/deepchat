@@ -21,6 +21,7 @@
           <ModelIcon
             v-else
             :model-id="currentMessage.model_provider"
+            :agent-id="sessionAgentId"
             custom-class="w-[18px] h-[18px]"
             :is-dark="themeStore.isDark"
             :alt="currentMessage.role"
@@ -29,7 +30,7 @@
         </div>
 
         <div class="flex min-w-0 flex-col w-full space-y-1.5">
-          <MessageInfo :name="currentMessage.model_name" :timestamp="currentMessage.timestamp" />
+          <MessageInfo :name="messageDisplayName" :timestamp="currentMessage.timestamp" />
           <div class="flex flex-col w-full gap-1.5" data-message-content="true">
             <Spinner
               v-if="
@@ -250,7 +251,9 @@ import {
   ContextMenuTrigger
 } from '@shadcn/components/ui/context-menu'
 import { createDeviceClient } from '@api/DeviceClient'
+import { useSessionStore } from '@/stores/ui/session'
 import { useThemeStore } from '@/stores/theme'
+import { useAgentStore } from '@/stores/ui/agent'
 import { notifyRenderer } from '@renderer-notifications/rendererNotificationPort'
 import { useMemoryActivityStore } from '@/stores/ui/memoryActivity'
 const props = defineProps<{
@@ -269,6 +272,13 @@ const deviceClient = createDeviceClient()
 const uiSettingsStore = useUiSettingsStore()
 const { t } = useI18n()
 const memoryActivity = useMemoryActivityStore()
+const sessionStore = useSessionStore()
+const agentStore = useAgentStore()
+
+const sessionAgentId = computed(() => {
+  const agentId = sessionStore.activeSession?.agentId?.trim()
+  return agentId || 'deepchat'
+})
 
 const AUDIO_EXTENSIONS = ['.mp3', '.wav', '.m4a', '.aac', '.flac', '.ogg', '.opus']
 const VIDEO_EXTENSIONS = ['.mp4', '.mov', '.m4v', '.webm', '.avi', '.mkv']
@@ -377,6 +387,14 @@ const currentMessage = computed(() => {
 
   const variant = allVariants.value[currentVariantIndex.value - 1]
   return variant || props.message
+})
+
+const messageDisplayName = computed(() => {
+  const agent = agentStore.agents.find((agent) => agent.id === sessionAgentId.value)
+  if (agent?.id === 'deepchat') {
+    return t('welcome.agentPage.defaultAgentName')
+  }
+  return agent?.name || currentMessage.value.model_name
 })
 
 // 计算当前消息的所有变体（包括缓存中的，过滤掉主消息本身）

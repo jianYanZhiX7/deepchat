@@ -15,7 +15,13 @@
               class="flex items-center justify-center w-9 h-9 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
               @click="openAigotokenWebsite"
             >
-              <ModelIcon model-id="aigotoken" custom-class="w-4 h-4" :is-dark="themeStore.isDark" />
+              <AgentAvatar v-if="sidebarAgent" :agent="sidebarAgent" class-name="w-4 h-4" />
+              <ModelIcon
+                v-else
+                model-id="aigotoken"
+                custom-class="w-4 h-4"
+                :is-dark="themeStore.isDark"
+              />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">aigotoken.com</TooltipContent>
@@ -763,6 +769,19 @@ const selectedAgentName = computed(() => {
     (agent) => agent.id === sidebarSelectedAgentId.value
   )
   return matchedAgent?.name ?? t('chat.sidebar.allAgents')
+})
+
+const sidebarAgent = computed(() => {
+  const selectedAgentId = sidebarSelectedAgentId.value
+  if (selectedAgentId === null) {
+    return null
+  }
+
+  if (agentStore.selectedAgent?.id === selectedAgentId) {
+    return agentStore.selectedAgent
+  }
+
+  return agentStore.enabledAgents.find((agent) => agent.id === selectedAgentId) ?? null
 })
 
 const remoteChannelIds = computed(() =>

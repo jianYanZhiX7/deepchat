@@ -13,6 +13,10 @@ const memoryActivity = vi.hoisted(() => ({
   rememberSelection: vi.fn()
 }))
 const notifyRenderer = vi.hoisted(() => vi.fn())
+const activeSession = vi.hoisted(() => ({ agentId: undefined as string | undefined }))
+const agentStore = vi.hoisted(() => ({
+  agents: [] as Array<{ id: string; name: string; type?: string }>
+}))
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
@@ -42,6 +46,16 @@ vi.mock('@/stores/theme', () => ({
   useThemeStore: () => ({
     isDark: false
   })
+}))
+
+vi.mock('@/stores/ui/session', () => ({
+  useSessionStore: () => ({
+    activeSession
+  })
+}))
+
+vi.mock('@/stores/ui/agent', () => ({
+  useAgentStore: () => agentStore
 }))
 
 vi.mock('@shadcn/components/ui/spinner', () => ({
@@ -190,12 +204,30 @@ describe('MessageItemAssistant', () => {
     memoryActivity.openTurnMemories.mockClear()
     memoryActivity.rememberSelection.mockClear()
     notifyRenderer.mockClear()
+    activeSession.agentId = undefined
+    agentStore.agents = []
   })
 
   const global = {
     stubs: {
-      ModelIcon: componentStub('ModelIcon'),
-      MessageInfo: componentStub('MessageInfo'),
+      ModelIcon: defineComponent({
+        name: 'ModelIcon',
+        props: {
+          modelId: { type: String, default: '' },
+          agentId: { type: String, default: '' },
+          linkable: { type: Boolean, default: false }
+        },
+        template:
+          '<div data-testid="model-icon-stub" :data-model-id="modelId" :data-agent-id="agentId" :data-linkable="String(linkable)" />'
+      }),
+      MessageInfo: defineComponent({
+        name: 'MessageInfo',
+        props: {
+          name: { type: String, default: '' },
+          timestamp: { type: Number, default: 0 }
+        },
+        template: '<div data-testid="message-info" :data-name="name" />'
+      }),
       MessageBlockContent: defineComponent({
         name: 'MessageBlockContent',
         props: {
@@ -465,6 +497,104 @@ describe('MessageItemAssistant', () => {
     expect(wrapper.find('[data-testid="activity-group"]').exists()).toBe(false)
     expect(wrapper.findComponent({ name: 'MessageBlockThink' }).exists()).toBe(true)
     expect(wrapper.findComponent({ name: 'MessageBlockToolCall' }).exists()).toBe(true)
+  })
+
+  it('resolves the session agent icon for assistant messages while keeping the provider link', () => {
+    activeSession.agentId = 'deepchat-code-expert'
+    const message = createMessage('sent', [], { model_provider: 'aigotoken' })
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message,
+        isCapturingImage: false
+      },
+      global
+    })
+
+    const icon = wrapper.get('[data-testid="model-icon-stub"]')
+
+    expect(icon.attributes('data-model-id')).toBe('aigotoken')
+    expect(icon.attributes('data-agent-id')).toBe('deepchat-code-expert')
+    expect(icon.attributes('data-linkable')).toBe('true')
+  })
+
+  it('falls back to the builtin deepchat agent icon when the session has no agent', () => {
+    const message = createMessage('sent', [], { model_provider: 'aigotoken' })
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message,
+        isCapturingImage: false
+      },
+      global
+    })
+
+    const icon = wrapper.get('[data-testid="model-icon-stub"]')
+
+    expect(icon.attributes('data-model-id')).toBe('aigotoken')
+    expect(icon.attributes('data-agent-id')).toBe('deepchat')
+    expect(icon.attributes('data-linkable')).toBe('true')
+  })
+
+  it('keeps the agent model id for acp assistant messages', () => {
+    activeSession.agentId = 'acp-agent-1'
+    const message = createMessage('sent', [], {
+      model_provider: 'acp',
+      model_id: 'acp-agent-1'
+    })
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message,
+        isCapturingImage: false
+      },
+      global
+    })
+
+    const icon = wrapper.get('[data-testid="model-icon-stub"]')
+
+    expect(icon.attributes('data-model-id')).toBe('acp-agent-1')
+    expect(icon.attributes('data-agent-id')).toBe('')
+    expect(icon.attributes('data-linkable')).toBe('false')
+  })
+
+  it('shows the session agent name instead of the model name', () => {
+    agentStore.agents = [{ id: 'deepchat-code-expert', name: '代码专家', type: 'deepchat' }]
+    activeSession.agentId = 'deepchat-code-expert'
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message: createMessage('sent', [], { model_name: 'GPT-4' }),
+        isCapturingImage: false
+      },
+      global
+    })
+
+    expect(wrapper.get('[data-testid="message-info"]').attributes('data-name')).toBe('代码专家')
+  })
+
+  it('shows the builtin agent display name instead of the model name', () => {
+    agentStore.agents = [{ id: 'deepchat', name: 'DeepChat', type: 'deepchat' }]
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message: createMessage('sent', [], { model_name: 'GPT-4' }),
+        isCapturingImage: false
+      },
+      global
+    })
+
+    expect(wrapper.get('[data-testid="message-info"]').attributes('data-name')).toBe(
+      'welcome.agentPage.defaultAgentName'
+    )
+  })
+
+  it('falls back to the model name when the session agent is unknown', () => {
+    activeSession.agentId = 'missing-agent'
+    const wrapper = mount(MessageItemAssistant, {
+      props: {
+        message: createMessage('sent', [], { model_name: 'GPT-4' }),
+        isCapturingImage: false
+      },
+      global
+    })
+
+    expect(wrapper.get('[data-testid="message-info"]').attributes('data-name')).toBe('GPT-4')
   })
 
   it('does not remount an MCP App when live activity becomes grouped', async () => {

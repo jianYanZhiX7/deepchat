@@ -8,14 +8,16 @@ const providerStore = reactive({
   providers: [] as Array<{ id: string; apiType?: string; websites?: { official: string } }>
 })
 
+const agentStoreState = reactive({
+  agents: [] as Array<{ id: string; type?: string; icon?: string; avatar?: unknown }>
+})
+
 vi.mock('@/stores/providerStore', () => ({
   useProviderStore: () => providerStore
 }))
 
 vi.mock('@/stores/ui/agent', () => ({
-  useAgentStore: () => ({
-    agents: []
-  })
+  useAgentStore: () => agentStoreState
 }))
 
 vi.mock('@api/BrowserClient', () => ({
@@ -25,6 +27,7 @@ vi.mock('@api/BrowserClient', () => ({
 describe('ModelIcon', () => {
   beforeEach(() => {
     providerStore.providers = []
+    agentStoreState.agents = []
     openExternal.mockReset()
     openExternal.mockResolvedValue(undefined)
   })
@@ -217,6 +220,76 @@ describe('ModelIcon', () => {
     const wrapper = mount(ModelIcon, {
       props: {
         modelId: 'aigotoken',
+        linkable: true
+      }
+    })
+
+    const link = wrapper.find('a')
+    expect(link.exists()).toBe(true)
+    expect(link.attributes('href')).toBe('https://www.aigotoken.com')
+
+    await link.trigger('click')
+
+    expect(openExternal).toHaveBeenCalledWith('https://www.aigotoken.com')
+  })
+
+  it('resolves the agent icon when agentId matches an agent', async () => {
+    agentStoreState.agents = [
+      {
+        id: 'deepchat-code-expert',
+        type: 'deepchat',
+        icon: 'agentpreset://deepchat-code-expert.svg'
+      }
+    ]
+    const ModelIcon = (await import('@/components/icons/ModelIcon.vue')).default
+    const wrapper = mount(ModelIcon, {
+      props: {
+        modelId: 'aigotoken',
+        agentId: 'deepchat-code-expert'
+      }
+    })
+
+    const image = wrapper.get('img')
+
+    expect(image.attributes('src')).toBe('agentpreset://deepchat-code-expert.svg')
+  })
+
+  it('renders the builtin deepchat logo when the agent has no icon', async () => {
+    agentStoreState.agents = [{ id: 'deepchat', type: 'deepchat', icon: '' }]
+    const ModelIcon = (await import('@/components/icons/ModelIcon.vue')).default
+    const deepchatLogo = (await import('@/assets/logo.png?url')).default
+    const wrapper = mount(ModelIcon, {
+      props: {
+        modelId: 'aigotoken',
+        agentId: 'deepchat'
+      }
+    })
+
+    const image = wrapper.get('img')
+
+    expect(image.attributes('src')).toBe(deepchatLogo)
+  })
+
+  it('keeps the provider website link when agentId is provided', async () => {
+    agentStoreState.agents = [
+      {
+        id: 'deepchat-code-expert',
+        type: 'deepchat',
+        icon: 'agentpreset://deepchat-code-expert.svg'
+      }
+    ]
+    providerStore.providers = [
+      {
+        id: 'aigotoken',
+        apiType: 'new-api',
+        websites: { official: 'https://www.aigotoken.com', apiKey: '' }
+      }
+    ]
+    const ModelIcon = (await import('@/components/icons/ModelIcon.vue')).default
+    const wrapper = mount(ModelIcon, {
+      props: {
+        modelId: 'aigotoken',
+        agentId: 'deepchat-code-expert',
         linkable: true
       }
     })

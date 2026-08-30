@@ -4,6 +4,7 @@ import { useProviderStore } from '@/stores/providerStore'
 import { useAgentStore } from '@/stores/ui/agent'
 import { createBrowserClient } from '@api/BrowserClient'
 import AcpAgentIcon from './AcpAgentIcon.vue'
+import deepchatLogo from '@/assets/logo.png?url'
 import {
   DEFAULT_MODEL_ICON_KEY,
   isMonoModelIconUrl,
@@ -13,12 +14,14 @@ import {
 
 interface Props {
   modelId: string
+  agentId?: string
   customClass?: string
   isDark?: boolean
   linkable?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  agentId: '',
   customClass: 'w-4 h-4',
   isDark: false,
   linkable: false
@@ -51,11 +54,29 @@ const iconKey = computed(() => {
   )
 })
 
-const dynamicAgentIcon = computed(() => {
-  if (!props.modelId) {
-    return ''
+const agentLookupId = computed(() => props.agentId.trim() || props.modelId)
+
+const resolvedAgent = computed(() => {
+  if (!agentLookupId.value) {
+    return undefined
   }
-  return agentStore.agents.find((agent) => agent.id === props.modelId)?.icon ?? ''
+  return agentStore.agents.find((agent) => agent.id === agentLookupId.value)
+})
+
+const dynamicAgentIcon = computed(() => resolvedAgent.value?.icon ?? '')
+
+const builtinAgentLogo = computed(() => {
+  const agent = resolvedAgent.value
+  if (
+    agent &&
+    agent.id === 'deepchat' &&
+    agent.type === 'deepchat' &&
+    !agent.icon?.trim() &&
+    !agent.avatar
+  ) {
+    return deepchatLogo
+  }
+  return ''
 })
 
 const useDynamicAcpRegistryIcon = computed(() => {
@@ -64,7 +85,7 @@ const useDynamicAcpRegistryIcon = computed(() => {
 })
 
 const invert = computed(() => {
-  if (dynamicAgentIcon.value && !iconLoadFailed.value) {
+  if ((dynamicAgentIcon.value || builtinAgentLogo.value) && !iconLoadFailed.value) {
     return false
   }
   if (!props.isDark) {
@@ -73,11 +94,15 @@ const invert = computed(() => {
   return isMonoModelIconUrl(modelIcons[iconKey.value])
 })
 
-const resolvedIconSrc = computed(() =>
-  dynamicAgentIcon.value && !iconLoadFailed.value
-    ? dynamicAgentIcon.value
-    : modelIcons[iconKey.value]
-)
+const resolvedIconSrc = computed(() => {
+  if (dynamicAgentIcon.value && !iconLoadFailed.value) {
+    return dynamicAgentIcon.value
+  }
+  if (builtinAgentLogo.value) {
+    return builtinAgentLogo.value
+  }
+  return modelIcons[iconKey.value]
+})
 
 const linkUrl = computed(() => provider.value?.websites?.official)
 
@@ -93,7 +118,7 @@ const handleIconClick = () => {
 }
 
 watch(
-  () => [props.modelId, dynamicAgentIcon.value] as const,
+  () => [props.modelId, props.agentId, resolvedIconSrc.value] as const,
   () => {
     iconLoadFailed.value = false
     iconLoaded.value = false
@@ -117,7 +142,7 @@ const handleIconLoad = () => {
 <template>
   <AcpAgentIcon
     v-if="useDynamicAcpRegistryIcon"
-    :agent-id="props.modelId"
+    :agent-id="agentLookupId"
     :icon="dynamicAgentIcon"
     :alt="props.modelId"
     :fallback-text="props.modelId"

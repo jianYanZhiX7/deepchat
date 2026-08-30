@@ -611,6 +611,12 @@ describe('WindowSideBar agent switch', () => {
       expect(wrapper.text()).toContain('ACP A')
       expect(sessionStore.getPinnedSessions).toHaveBeenCalledWith('acp-a')
       expect(sessionStore.getFilteredGroups).toHaveBeenCalledWith('acp-a')
+      expect(
+        wrapper
+          .get('[data-testid="window-sidebar-aigotoken-button"]')
+          .find('agent-avatar-stub')
+          .exists()
+      ).toBe(true)
     },
     TEST_TIMEOUT_MS
   )
