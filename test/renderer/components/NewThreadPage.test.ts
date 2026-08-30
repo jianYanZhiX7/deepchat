@@ -322,6 +322,13 @@ const setup = async (options?: {
       }
     })
   }))
+  vi.doMock('@/components/icons/AgentAvatar.vue', () => ({
+    default: {
+      name: 'AgentAvatar',
+      props: ['agent'],
+      template: '<span class="mock-avatar" :data-agent-id="agent.id" />'
+    }
+  }))
   vi.doMock('@shadcn/components/ui/tooltip', () => ({
     TooltipProvider: passthrough('TooltipProvider')
   }))
@@ -556,6 +563,7 @@ describe('NewThreadPage ACP draft session bootstrap', () => {
 
     agentStore.selectedAgentId = 'deepchat'
     await flushPromises()
+    expect(wrapper.find('.mock-avatar').attributes('data-agent-id')).toBe('deepchat')
     modelStore.enabledModels = [
       {
         providerId: 'openai',

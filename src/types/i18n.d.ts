@@ -4343,8 +4343,7 @@ declare module 'vue-i18n' {
     }
     agentPage: {
       title: string
-      deepchatType: string
-      acpType: string
+      defaultAgentName: string
       manageAgents: string
     }
   }

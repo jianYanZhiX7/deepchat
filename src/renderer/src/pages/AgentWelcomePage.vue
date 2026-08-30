@@ -1,8 +1,14 @@
 <template>
   <div class="h-full w-full flex flex-col window-drag-region">
     <div class="flex-1 flex flex-col items-center justify-center px-6">
-      <div class="mb-5">
-        <img src="@/assets/logo-dark.png" class="w-16 h-16" loading="lazy" />
+      <div class="mb-5 flex h-16 w-16 items-center justify-center">
+        <AgentAvatar
+          v-if="headerAgent"
+          :agent="headerAgent"
+          class-name="h-16 w-16"
+          fallback-class-name="rounded-xl"
+        />
+        <img v-else src="@/assets/logo-dark.png" class="h-16 w-16" loading="lazy" />
       </div>
 
       <h1 class="mb-10 text-3xl font-semibold text-foreground">
@@ -14,6 +20,8 @@
           v-for="agent in displayedAgents"
           :key="agent.id"
           class="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-left transition-all duration-150 hover:border-border hover:bg-accent/40"
+          @mouseenter="hoveredAgentId = agent.id"
+          @mouseleave="hoveredAgentId = null"
           @click="selectAgent(agent.id)"
         >
           <div
@@ -22,13 +30,8 @@
             <AgentAvatar :agent="agent" class-name="h-6 w-6" fallback-class-name="rounded-lg" />
           </div>
           <div class="min-w-0 flex-1">
-            <div class="truncate text-sm font-semibold text-foreground">{{ agent.name }}</div>
-            <div class="truncate text-xs text-muted-foreground">
-              {{
-                agent.type === 'deepchat'
-                  ? t('welcome.agentPage.deepchatType')
-                  : t('welcome.agentPage.acpType')
-              }}
+            <div class="truncate text-sm font-semibold text-foreground">
+              {{ agent.id === 'deepchat' ? t('welcome.agentPage.defaultAgentName') : agent.name }}
             </div>
           </div>
           <Icon icon="lucide:chevron-right" class="h-4 w-4 text-muted-foreground/50" />
@@ -46,7 +49,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { createSettingsClient } from '@api/SettingsClient'
@@ -57,6 +60,10 @@ const { t } = useI18n()
 const settingsClient = createSettingsClient()
 const agentStore = useAgentStore()
 const displayedAgents = computed(() => agentStore.enabledAgents.slice(0, 9))
+const hoveredAgentId = ref<string | null>(null)
+const headerAgent = computed(
+  () => displayedAgents.value.find((agent) => agent.id === hoveredAgentId.value) ?? null
+)
 
 const selectAgent = (agentId: string) => {
   agentStore.setSelectedAgent(agentId)

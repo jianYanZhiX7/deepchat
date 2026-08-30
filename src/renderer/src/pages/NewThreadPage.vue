@@ -8,8 +8,12 @@
       <!-- Main content area (centered) -->
       <div class="flex-1 flex flex-col items-center justify-center px-6">
         <!-- Logo -->
-        <div class="mb-4">
-          <img src="@/assets/logo-dark.png" class="w-14 h-14" loading="lazy" />
+        <div class="mb-4 flex h-14 w-14 items-center justify-center">
+          <AgentAvatar
+            :agent="selectedAgent"
+            class-name="h-14 w-14"
+            fallback-class-name="rounded-xl"
+          />
         </div>
 
         <!-- Heading -->
@@ -182,6 +186,7 @@ import { Icon } from '@iconify/vue'
 import ChatInputBox from '@/components/chat/ChatInputBox.vue'
 import ChatInputToolbar from '@/components/chat/ChatInputToolbar.vue'
 import ChatStatusBar from '@/components/chat/ChatStatusBar.vue'
+import AgentAvatar from '@/components/icons/AgentAvatar.vue'
 import {
   openChatStatusBarModelPicker,
   switchAttachmentToVisionModel,
@@ -369,7 +374,7 @@ const selectedAgent = computed(() => {
     return agentStore.selectedAgent
   }
 
-  return { id: selectedAgentId, type: resolveAgentType(selectedAgentId) }
+  return { id: selectedAgentId, name: selectedAgentId, type: resolveAgentType(selectedAgentId) }
 })
 const isAcpSelectedAgent = computed(() => selectedAgent.value.type === 'acp')
 const isDeepChatSelectedAgent = computed(() => selectedAgent.value.type === 'deepchat')

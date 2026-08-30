@@ -72,8 +72,7 @@
   },
   "agentPage": {
     "title": "Vælg en agent for at begynde at skabe",
-    "deepchatType": "DeepChat-agent",
-    "acpType": "ACP-agent",
+    "defaultAgentName": "DeepChat",
     "manageAgents": "Administrer DeepChat-agenter"
   }
 }

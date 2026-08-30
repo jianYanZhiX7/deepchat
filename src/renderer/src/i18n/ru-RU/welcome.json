@@ -72,8 +72,7 @@
   },
   "agentPage": {
     "title": "Выберите агента, чтобы начать работу",
-    "deepchatType": "Агент DeepChat",
-    "acpType": "Агент ACP",
+    "defaultAgentName": "DeepChat",
     "manageAgents": "Управление агентами DeepChat"
   }
 }

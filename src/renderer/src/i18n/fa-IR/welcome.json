@@ -72,8 +72,7 @@
   },
   "agentPage": {
     "title": "یک ایجنت انتخاب کنید و خلق را شروع کنید",
-    "deepchatType": "ایجنت DeepChat",
-    "acpType": "ایجنت ACP",
+    "defaultAgentName": "DeepChat",
     "manageAgents": "مدیریت ایجنت‌های DeepChat"
   }
 }

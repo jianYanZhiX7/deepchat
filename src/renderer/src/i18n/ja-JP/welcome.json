@@ -72,8 +72,7 @@
   },
   "agentPage": {
     "title": "エージェントを選んで作成を始める",
-    "deepchatType": "DeepChatエージェント",
-    "acpType": "ACPエージェント",
+    "defaultAgentName": "DeepChat",
     "manageAgents": "DeepChatエージェントを管理"
   }
 }

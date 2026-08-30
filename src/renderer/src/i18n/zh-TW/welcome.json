@@ -72,8 +72,7 @@
   },
   "agentPage": {
     "title": "選擇 Agent 開始創作",
-    "deepchatType": "DeepChat 智能體",
-    "acpType": "ACP 智能體",
+    "defaultAgentName": "日常助手",
     "manageAgents": "管理 DeepChat Agent"
   }
 }

@@ -213,6 +213,13 @@ const setup = async () => {
   vi.doMock('@/components/chat/ChatStatusBar.vue', () => ({
     default: passthrough('ChatStatusBar')
   }))
+  vi.doMock('@/components/icons/AgentAvatar.vue', () => ({
+    default: {
+      name: 'AgentAvatar',
+      props: ['agent'],
+      template: '<span class="mock-avatar" :data-agent-id="agent.id" />'
+    }
+  }))
   vi.doMock('@shadcn/components/ui/tooltip', () => ({
     TooltipProvider: passthrough('TooltipProvider')
   }))
