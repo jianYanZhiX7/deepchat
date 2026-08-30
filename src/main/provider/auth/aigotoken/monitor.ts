@@ -24,9 +24,9 @@ export class AigotokenModelMonitor {
       void this.tick()
     }, this.intervalMs)
 
-    logger.info(
-      `[AigotokenModelMonitor] started with interval ${this.intervalMs}ms`
-    )
+    void this.tick()
+
+    logger.info(`[AigotokenModelMonitor] started with interval ${this.intervalMs}ms`)
   }
 
   stop(): void {

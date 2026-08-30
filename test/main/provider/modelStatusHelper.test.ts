@@ -77,6 +77,24 @@ describe('ModelStatusHelper.ensureModelStatus', () => {
     expect(helper.getModelStatus('ollama', 'deepseek-r1:1.5b')).toBe(false)
   })
 
+  it('writes a default status after a batch lookup cached the key as false', () => {
+    const store = new MockElectronStore()
+    const helper = new ModelStatusHelper({
+      store: store as any,
+      setSetting: (key, value) => store.set(key, value),
+      publishEvent: () => undefined
+    })
+
+    expect(helper.getBatchModelStatus('aigotoken', ['deepseek-v4-flash', 'gpt-4o'])).toEqual({
+      'deepseek-v4-flash': false,
+      'gpt-4o': false
+    })
+
+    helper.ensureModelStatus('aigotoken', 'gpt-4o', true)
+
+    expect(helper.getModelStatus('aigotoken', 'gpt-4o')).toBe(true)
+  })
+
   it('builds the persisted snapshot once and reuses it for batch lookups', () => {
     const store = new MockElectronStore()
     store.set('model_status_openai_gpt-5-4', true)

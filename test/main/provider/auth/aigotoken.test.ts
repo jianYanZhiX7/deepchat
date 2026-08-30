@@ -354,7 +354,7 @@ describe('Aigotoken auth', () => {
     const models: MODEL_META[] = store.setProviderModels.mock.calls[0][1]
     expect(models).toHaveLength(2)
     expect(models[0]).toMatchObject({ id: 'gpt-4', providerId: 'aigotoken', enabled: true })
-    expect(models[1]).toMatchObject({ id: 'claude-3', group: 'anthropic' })
+    expect(models[1]).toMatchObject({ id: 'claude-3', group: 'aigotoken' })
 
     expect(store.setProviderById).toHaveBeenCalledWith(
       'aigotoken',

@@ -319,7 +319,7 @@ export class AigotokenAuth {
       const models: MODEL_META[] = (payload.data || []).map((model) => ({
         id: model.id,
         name: model.id,
-        group: model.owned_by || 'aigotoken',
+        group: 'aigotoken',
         providerId: 'aigotoken',
         enabled: true
       }))
@@ -379,7 +379,7 @@ export class AigotokenAuth {
       const models: MODEL_META[] = fetched.map((model) => ({
         id: model.id,
         name: model.id,
-        group: model.owned_by || 'aigotoken',
+        group: 'aigotoken',
         providerId: 'aigotoken',
         enabled: true
       }))

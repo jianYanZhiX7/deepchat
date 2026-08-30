@@ -174,7 +174,7 @@ export class ModelStatusHelper {
   ensureModelStatus(providerId: string, modelId: string, enabled: boolean): void {
     const statusKey = this.getStatusKey(providerId, modelId)
 
-    if (this.cache.has(statusKey) || this.hasStoredStatus(statusKey)) {
+    if (this.hasStoredStatus(statusKey)) {
       if (!this.cache.has(statusKey)) {
         const statusSnapshot = this.getStatusSnapshot()
         if (statusSnapshot) {
