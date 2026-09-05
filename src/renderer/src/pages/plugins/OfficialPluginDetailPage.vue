@@ -29,7 +29,13 @@
               <div
                 class="flex size-12 shrink-0 items-center justify-center rounded-xl border bg-muted/40"
               >
-                <Icon :icon="remoteIcon" class="size-6" :class="remoteIconClass" />
+                <img
+                  v-if="remoteChannel === 'weixin-ilink'"
+                  :src="weixinIlinkLogoUrl"
+                  alt=""
+                  class="size-6 object-contain"
+                />
+                <Icon v-else :icon="remoteIcon" class="size-6" :class="remoteIconClass" />
               </div>
               <div class="min-w-0">
                 <h1 class="truncate text-2xl font-semibold tracking-normal">
@@ -296,6 +302,7 @@ import { createPluginClient } from '@api/PluginClient'
 import { createRemoteControlClient } from '@api/RemoteControlClient'
 import { usePluginCatalogStore } from '@/stores/pluginCatalog'
 import RemoteSettings from '../../../settings/components/RemoteSettings.vue'
+import weixinIlinkLogoUrl from '@/assets/images/weixin-ilink.svg?url'
 import type { ChannelSettingsMap, RemoteChannel } from '@shared/types/remote'
 import {
   CUA_PLUGIN_ID,

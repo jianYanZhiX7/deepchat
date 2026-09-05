@@ -36,7 +36,13 @@
             <div
               class="flex size-12 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/40"
             >
-              <Icon :icon="item.icon" class="size-6" :class="item.iconClass" />
+              <img
+                v-if="item.id === WEIXIN_ILINK_PLUGIN_ID"
+                :src="weixinIlinkLogoUrl"
+                alt=""
+                class="size-6 object-contain"
+              />
+              <Icon v-else :icon="item.icon" class="size-6" :class="item.iconClass" />
             </div>
 
             <div class="min-w-0 flex-1">
@@ -101,6 +107,7 @@ import { createRemoteControlClient } from '@api/RemoteControlClient'
 import { CUA_PLUGIN_ID, type PluginActionResult, type PluginListItem } from '@shared/types/plugin'
 import type { RemoteChannel } from '@shared/types/remote'
 import { usePluginCatalogStore } from '@/stores/pluginCatalog'
+import weixinIlinkLogoUrl from '@/assets/images/weixin-ilink.svg?url'
 
 type CatalogBadge = {
   text: string
@@ -155,6 +162,7 @@ const remoteIconClassByChannel: Record<RemoteChannel, string> = {
 const FEISHU_PLUGIN_ID = 'com.deepchat.plugins.feishu'
 const CUA_PLUGIN_ICON = 'lucide:laptop-minimal-check'
 const remotePluginId = (channel: RemoteChannel): string => `remote:${channel}`
+const WEIXIN_ILINK_PLUGIN_ID = remotePluginId('weixin-ilink')
 const isFeishuOfficialPlugin = (plugin: PluginListItem): boolean => plugin.id === FEISHU_PLUGIN_ID
 const pluginIcon = (plugin: PluginListItem): string =>
   isFeishuOfficialPlugin(plugin)

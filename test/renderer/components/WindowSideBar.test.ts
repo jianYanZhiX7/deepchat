@@ -2058,6 +2058,41 @@ describe('WindowSideBar agent switch', () => {
 
     wrapper.unmount()
   })
+
+  it('routes to the Weixin iLink plugin detail from the rail entry', async () => {
+    const { wrapper, settingsClient, router } = await setup()
+
+    const button = wrapper.find('[data-testid="window-sidebar-weixin-ilink-button"]')
+    expect(button.exists()).toBe(true)
+    expect(button.find('img').attributes('src')).toBe(
+      (await import('@/assets/images/weixin-ilink.svg?url')).default
+    )
+
+    await button.trigger('click')
+    await flushPromises()
+    expect(router.push).toHaveBeenCalledWith({
+      name: 'plugins-detail',
+      params: { pluginId: 'remote:weixin-ilink' }
+    })
+    expect(settingsClient.openSettings).not.toHaveBeenCalled()
+
+    wrapper.unmount()
+  })
+
+  it('opens the scheduled tasks settings from the command list', async () => {
+    const { wrapper, settingsClient } = await setup()
+
+    const button = wrapper.find('[data-testid="app-scheduled-tasks-button"]')
+    expect(button.exists()).toBe(true)
+
+    await button.trigger('click')
+    await flushPromises()
+    expect(settingsClient.openSettings).toHaveBeenCalledWith({
+      routeName: 'settings-scheduled-tasks'
+    })
+
+    wrapper.unmount()
+  })
 })
 
 describe('WindowSideBar viewport auto-fill', () => {

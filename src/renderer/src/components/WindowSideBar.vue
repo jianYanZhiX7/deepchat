@@ -42,6 +42,23 @@
           <TooltipContent side="right">{{ t('chat.sidebar.allAgents') }}</TooltipContent>
         </Tooltip>
 
+        <!-- Weixin iLink entry -->
+        <Tooltip>
+          <TooltipTrigger as-child>
+            <Button
+              data-testid="window-sidebar-weixin-ilink-button"
+              class="flex items-center justify-center w-10 h-10 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
+              :title="t('settings.remote.weixinIlink.title')"
+              @click="openWeixinIlinkSettings"
+            >
+              <img :src="weixinIlinkLogoUrl" alt="" class="w-6 h-6 shrink-0 object-contain" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="right">
+            {{ t('settings.remote.weixinIlink.title') }}
+          </TooltipContent>
+        </Tooltip>
+
         <div class="w-5 h-px bg-border my-1"></div>
 
         <!-- Agent icons -->
@@ -236,6 +253,18 @@
             >
               <Icon icon="lucide:blocks" class="size-4 shrink-0 text-muted-foreground" />
               <span class="min-w-0 flex-1 truncate">{{ t('routes.plugins') }}</span>
+            </button>
+
+            <button
+              data-testid="app-scheduled-tasks-button"
+              type="button"
+              class="flex h-9 w-full items-center gap-3 rounded-lg px-2 text-left text-sm text-foreground transition-colors hover:bg-accent/60"
+              @click="openScheduledTasks"
+            >
+              <Icon icon="lucide:calendar-clock" class="size-4 shrink-0 text-muted-foreground" />
+              <span class="min-w-0 flex-1 truncate">
+                {{ t('routes.settings-scheduled-tasks') }}
+              </span>
             </button>
           </div>
         </div>
@@ -644,6 +673,7 @@ import { usePluginCatalogStore } from '@/stores/pluginCatalog'
 import type { RemoteChannel, RemoteRuntimeState } from '@shared/types/remote'
 import AgentAvatar from './icons/AgentAvatar.vue'
 import aigotokenIcon from '@/assets/llm-icons/aigotoken.svg?url'
+import weixinIlinkLogoUrl from '@/assets/images/weixin-ilink.svg?url'
 import WindowSideBarSessionItem from './WindowSideBarSessionItem.vue'
 import { useI18n } from 'vue-i18n'
 import { useSidebarStore } from '@/stores/ui/sidebar'
@@ -1295,6 +1325,10 @@ const openPlugins = () => {
   void router?.push({ name: 'plugins' })
 }
 
+const openScheduledTasks = () => {
+  void settingsClient.openSettings({ routeName: 'settings-scheduled-tasks' })
+}
+
 const openAigotokenWebsite = () => {
   void browserClient.openExternal('https://www.aigotoken.com').catch(() => {
     window.open('https://www.aigotoken.com', '_blank', 'noopener,noreferrer')
@@ -1306,6 +1340,18 @@ const openRemoteSettings = async () => {
     await router.push({
       name: 'plugins-detail',
       params: { pluginId: `remote:${firstEnabledRemoteChannel.value}` }
+    })
+    return
+  }
+
+  await settingsClient.openSettings({ routeName: 'settings-remote' })
+}
+
+const openWeixinIlinkSettings = async () => {
+  if (router?.hasRoute?.('plugins-detail')) {
+    await router.push({
+      name: 'plugins-detail',
+      params: { pluginId: 'remote:weixin-ilink' }
     })
     return
   }
