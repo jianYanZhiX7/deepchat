@@ -287,6 +287,74 @@ describe('DeepChatAgentsSettings', () => {
     }
   }
 
+  it('hides the three hidden builtin preset agents from the sidebar list', async () => {
+    const agents = [
+      {
+        id: 'deepchat',
+        type: 'deepchat',
+        name: 'DeepChat',
+        enabled: true,
+        protected: true,
+        description: null,
+        avatar: null,
+        config: {}
+      },
+      {
+        id: 'deepchat-code-expert',
+        type: 'deepchat',
+        name: '代码专家',
+        enabled: true,
+        protected: true,
+        description: null,
+        avatar: null,
+        config: {}
+      },
+      {
+        id: 'deepchat-writing-assistant',
+        type: 'deepchat',
+        name: '写作助手',
+        enabled: true,
+        protected: true,
+        description: null,
+        avatar: null,
+        config: {}
+      },
+      {
+        id: 'deepchat-data-analyst',
+        type: 'deepchat',
+        name: '数据分析师',
+        enabled: true,
+        protected: true,
+        description: null,
+        avatar: null,
+        config: {}
+      },
+      {
+        id: 'custom-agent',
+        type: 'deepchat',
+        name: 'Custom Agent',
+        enabled: true,
+        protected: false,
+        description: null,
+        avatar: null,
+        config: {}
+      }
+    ]
+    const { wrapper } = await mountSettings({ agents })
+
+    expect(wrapper.find('[data-testid="deepchat-agent-row-deepchat"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="deepchat-agent-row-custom-agent"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="deepchat-agent-row-deepchat-code-expert"]').exists()).toBe(
+      false
+    )
+    expect(
+      wrapper.find('[data-testid="deepchat-agent-row-deepchat-writing-assistant"]').exists()
+    ).toBe(false)
+    expect(wrapper.find('[data-testid="deepchat-agent-row-deepchat-data-analyst"]').exists()).toBe(
+      false
+    )
+  })
+
   it('shows pending and success feedback while deriving save availability from canonical data', async () => {
     const existingAgent = {
       id: 'deepchat',

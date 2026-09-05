@@ -811,6 +811,11 @@ type FormState = {
 const LUCIDE_ICONS = ['bot', 'sparkles', 'brain', 'code', 'book-open', 'pen-tool', 'rocket']
 const DRAFT_AGENT_ID = '__draft_deepchat_agent__'
 const CURRENT_SUBAGENT_TARGET = '__current_agent__'
+const HIDDEN_BUILTIN_AGENT_IDS = new Set([
+  'deepchat-code-expert',
+  'deepchat-writing-assistant',
+  'deepchat-data-analyst'
+])
 const AUTO_COMPACTION_TRIGGER_THRESHOLD_DEFAULT = 80
 const AUTO_COMPACTION_TRIGGER_THRESHOLD_MIN = 5
 const AUTO_COMPACTION_TRIGGER_THRESHOLD_MAX = 95
@@ -1110,14 +1115,16 @@ const draftSidebarAgent = computed<SidebarAgentItem>(() => ({
   avatar: buildAvatar()
 }))
 const sidebarAgents = computed<SidebarAgentItem[]>(() => {
-  const savedAgents = deepchatAgents.value.map((agent) => ({
-    id: agent.id,
-    name: agent.name,
-    enabled: agent.enabled,
-    protected: Boolean(agent.protected),
-    avatar: agent.avatar ?? null,
-    icon: agent.icon
-  }))
+  const savedAgents = deepchatAgents.value
+    .filter((agent) => !HIDDEN_BUILTIN_AGENT_IDS.has(agent.id))
+    .map((agent) => ({
+      id: agent.id,
+      name: agent.name,
+      enabled: agent.enabled,
+      protected: Boolean(agent.protected),
+      avatar: agent.avatar ?? null,
+      icon: agent.icon
+    }))
 
   if (selectedAgentId.value !== DRAFT_AGENT_ID) {
     return savedAgents
