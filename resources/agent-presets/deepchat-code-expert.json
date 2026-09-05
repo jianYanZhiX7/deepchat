@@ -10,6 +10,21 @@
     "mcp-builder",
     "skill-creator",
     "frontend-design",
-    "web-artifacts-builder"
+    "web-artifacts-builder",
+    "brainstorming",
+    "writing-plans",
+    "test-driven-development",
+    "systematic-debugging",
+    "verification-before-completion",
+    "using-git-worktrees",
+    "finishing-a-development-branch",
+    "dispatching-parallel-agents",
+    "api-and-interface-design",
+    "code-simplification",
+    "ci-cd-and-automation",
+    "security-and-hardening",
+    "performance-optimization",
+    "observability-and-instrumentation",
+    "documentation-and-adrs"
   ]
 }

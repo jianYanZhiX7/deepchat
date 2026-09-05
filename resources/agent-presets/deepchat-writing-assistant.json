@@ -9,6 +9,15 @@
     "docx",
     "pptx",
     "pdf",
-    "xlsx"
+    "xlsx",
+    "humanizer-zh",
+    "baoyu-format-markdown",
+    "baoyu-article-illustrator",
+    "story-long-write",
+    "story-review",
+    "humanizer",
+    "baoyu-translate",
+    "story-short-write",
+    "academic-writing-skills"
   ]
 }

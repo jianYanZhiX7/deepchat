@@ -8,6 +8,21 @@
     "xlsx",
     "pdf",
     "docx",
-    "infographic-syntax-creator"
+    "infographic-syntax-creator",
+    "polars",
+    "dask",
+    "statsmodels",
+    "scikit-learn",
+    "seaborn",
+    "matplotlib",
+    "scientific-visualization",
+    "timesfm-forecasting",
+    "geopandas",
+    "shap",
+    "StatsPAI_skill",
+    "narrative-text-visualization",
+    "data-profiling",
+    "metrics",
+    "question-framing"
   ]
 }
