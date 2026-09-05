@@ -114,6 +114,17 @@ export class AgentRepository {
     }
   }
 
+  syncBuiltinDeepChatPresetSkillSeeds(
+    presets: AgentPresetDefinition[]
+  ): Array<{ agentId: string; enabledSkillNames: string[] | null }> {
+    return this.deepchat.syncBuiltinPresetSkillSeeds(
+      presets.map((preset) => ({
+        id: preset.id,
+        enabledSkillNames: preset.enabledSkillNames ?? null
+      }))
+    )
+  }
+
   createDeepChatAgent(input: CreateDeepChatAgentInput): Agent {
     return mapCatalogRecordToLegacyAgent(decodeAgentCatalogRow(this.deepchat.create(input)))
   }

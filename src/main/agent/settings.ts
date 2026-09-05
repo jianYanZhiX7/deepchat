@@ -724,6 +724,7 @@ export class AgentSettings implements AgentSettingsPort {
     })
     this.builtinPresetDefinitions = loadAgentPresetDefinitions()
     this.repository.ensureBuiltinDeepChatAgents(this.builtinPresetDefinitions)
+    this.syncBuiltinPresetSkillPolicies()
 
     let migratedVersion = this.settings.get<number>('unifiedAgentsMigrationVersion') ?? 0
     let registryAgentsSynced = false
@@ -758,6 +759,18 @@ export class AgentSettings implements AgentSettingsPort {
       this.settings.set('unifiedAgentsMigrationVersion', migratedVersion)
     }
     if (!registryAgentsSynced) this.syncRegistryAgentsToRepository()
+  }
+
+  private syncBuiltinPresetSkillPolicies(): void {
+    const changed = this.repository.syncBuiltinDeepChatPresetSkillSeeds(
+      this.builtinPresetDefinitions ?? []
+    )
+    if (changed.length === 0) return
+    logger.info(
+      `[AgentSettings] Refreshed builtin preset Skill allow-lists: ${changed
+        .map((item) => `${item.agentId} (${(item.enabledSkillNames ?? []).length})`)
+        .join(', ')}`
+    )
   }
 
   private materializeIndependentDeepChatAgentConfigs(): void {

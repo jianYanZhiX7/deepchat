@@ -323,6 +323,7 @@ describe('AgentSettings migrations', () => {
     const repository = {
       ensureBuiltinDeepChatAgent: vi.fn(),
       ensureBuiltinDeepChatAgents: vi.fn(),
+      syncBuiltinDeepChatPresetSkillSeeds: vi.fn(() => []),
       listAgents: vi.fn(() => [
         { id: BUILTIN_DEEPCHAT_AGENT_ID },
         { id: 'deepchat-custom' },

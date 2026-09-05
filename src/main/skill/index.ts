@@ -554,6 +554,13 @@ export class SkillService implements SkillServicePort {
       }
       if (this.isServiceStopping()) return
 
+      try {
+        await this.reconcileAgentSkillScopes()
+      } catch (error) {
+        logger.warn('[SkillService] Agent Skill reconcile failed; continuing startup.', { error })
+      }
+      if (this.isServiceStopping()) return
+
       await this.watchSkillFiles()
       if (this.isServiceStopping()) return
       this.initialized = true
@@ -790,6 +797,114 @@ export class SkillService implements SkillServicePort {
       migratedCatalog,
       enabledSkillNames
     )
+  }
+
+  private async reconcileAgentSkillScopes(): Promise<void> {
+    if (!this.agentScopePort) return
+
+    const agents = await this.agentScopePort.listDeepChatAgents()
+    const builtinCatalog = await this.getUnifiedSkillCatalog(BUILTIN_SKILL_AGENT_ID)
+    const builtinByName = new Map(
+      builtinCatalog.filter((skill) => !skill.ownerPluginId).map((skill) => [skill.name, skill])
+    )
+
+    for (const agent of agents) {
+      if (agent.id === BUILTIN_SKILL_AGENT_ID) continue
+      if (!Array.isArray(agent.enabledSkillNames)) continue
+      if (this.deletedAgentScopes.has(agent.id)) continue
+      if (!(await this.agentScopePort.isDeepChatAgent(agent.id))) continue
+
+      const normalizedAgentId = assertSafeSkillAgentId(agent.id)
+      const root = this.getAgentSkillsRoot(normalizedAgentId)
+      const markerPath = path.join(root, AGENT_SKILL_MIGRATION_MARKER)
+      if (!fs.existsSync(markerPath)) continue
+
+      const selected = Array.from(new Set(agent.enabledSkillNames)).filter(
+        (name) => this.isSafeSkillName(name) && builtinByName.has(name)
+      )
+      if (selected.length === 0) continue
+
+      let declaredNames: string[]
+      try {
+        const parsed = JSON.parse(fs.readFileSync(markerPath, 'utf-8')) as {
+          agentId?: unknown
+          skillNames?: unknown
+        }
+        if (
+          parsed.agentId !== normalizedAgentId ||
+          !Array.isArray(parsed.skillNames) ||
+          !parsed.skillNames.every((name): name is string => typeof name === 'string')
+        ) {
+          continue
+        }
+        declaredNames = parsed.skillNames
+      } catch {
+        continue
+      }
+
+      const declared = new Set(declaredNames)
+      const candidates = selected.filter((name) => !declared.has(name))
+      if (candidates.length === 0) continue
+
+      const finishOperation = this.beginAgentScopeOperation(normalizedAgentId)
+      try {
+        const ensured: string[] = []
+        for (const name of candidates) {
+          const source = builtinByName.get(name)
+          if (!source) continue
+          const target = path.join(root, name)
+          const existing = this.readSkillManifestSummary(target)
+          if (existing.valid && existing.name === name) {
+            ensured.push(name)
+            continue
+          }
+          this.copyDirectory(source.skillRoot, target)
+          const summary = this.readSkillManifestSummary(target)
+          if (!summary.valid || summary.name !== name) {
+            fs.rmSync(target, { recursive: true, force: true })
+            logger.warn(
+              '[SkillService] Reconcile copy failed validation; removed the partial Skill.',
+              {
+                agentId: normalizedAgentId,
+                skillName: name,
+                error: summary.valid ? undefined : summary.error
+              }
+            )
+            continue
+          }
+          ensured.push(name)
+        }
+        if (ensured.length === 0) return
+
+        const ensuredSet = new Set(ensured)
+        const nextMarkerNames = selected.filter(
+          (name) => declared.has(name) || ensuredSet.has(name)
+        )
+        fs.writeFileSync(
+          markerPath,
+          JSON.stringify({ agentId: normalizedAgentId, skillNames: nextMarkerNames }),
+          'utf-8'
+        )
+
+        const state = this.getStoredManagementState()
+        const agentState = this.getAgentManagementState(state, normalizedAgentId)
+        agentState.migratedAt = new Date().toISOString()
+        const ensuredCatalog = ensured
+          .map((name) => builtinByName.get(name))
+          .filter((skill): skill is UnifiedSkillItem => Boolean(skill))
+          .map((skill) => ({ ...skill, skillRoot: path.join(root, skill.name) }))
+        this.materializeLegacySkillAllowList(state, normalizedAgentId, ensuredCatalog, selected)
+        this.saveManagementState(state)
+
+        this.scopedCatalogs.delete(normalizedAgentId)
+        await this.discoverScopedSkills(normalizedAgentId)
+        logger.info(
+          `[SkillService] Added ${ensured.length} missing preset Skill(s) to Agent scope ${normalizedAgentId}: ${ensured.join(', ')}`
+        )
+      } finally {
+        finishOperation()
+      }
+    }
   }
 
   private materializeLegacySkillAllowList(

@@ -1018,4 +1018,67 @@ describe('DeepChatAgentRepository', () => {
       JSON.stringify({ systemPrompt: 'Code expert', enabledSkillNames: ['code-review'] })
     )
   })
+
+  it('syncs preset enabledSkillNames onto protected builtin rows only', () => {
+    const { repository, rows } = createMutableRepository()
+    repository.ensureBuiltinAgent({
+      id: 'deepchat-code-expert',
+      name: 'Code Expert',
+      config: { systemPrompt: 'Expert', enabledSkillNames: ['code-review'] }
+    })
+    repository.create({
+      name: 'Manual',
+      config: { systemPrompt: 'Manual', enabledSkillNames: ['docx'] }
+    })
+
+    const changed = repository.syncBuiltinPresetSkillSeeds([
+      {
+        id: 'deepchat-code-expert',
+        enabledSkillNames: ['git-commit', 'code-review', 'mcp-builder']
+      },
+      { id: 'deepchat-data-analyst', enabledSkillNames: ['xlsx'] },
+      { id: 'missing', enabledSkillNames: ['xlsx'] }
+    ])
+
+    expect(changed).toEqual([
+      {
+        agentId: 'deepchat-code-expert',
+        enabledSkillNames: ['git-commit', 'code-review', 'mcp-builder']
+      }
+    ])
+    const expertConfig = JSON.parse(rows.get('deepchat-code-expert').config_json)
+    expect(expertConfig.enabledSkillNames).toEqual(['git-commit', 'code-review', 'mcp-builder'])
+    expect(expertConfig.systemPrompt).toBe('Expert')
+    expect(rows.get('missing')).toBeUndefined()
+  })
+
+  it('keeps preset skill sync idempotent and untouched by user-created Agents', () => {
+    const { repository, rows } = createMutableRepository()
+    repository.ensureBuiltinAgent({
+      id: 'deepchat-code-expert',
+      name: 'Code Expert',
+      config: { enabledSkillNames: ['code-review'] }
+    })
+    repository.create({
+      name: 'Manual',
+      config: { enabledSkillNames: ['docx'] }
+    })
+    const manualAgentId = [...rows.keys()].find(
+      (id) => id.startsWith('deepchat-') && id !== 'deepchat-code-expert'
+    )
+
+    const first = repository.syncBuiltinPresetSkillSeeds([
+      { id: 'deepchat-code-expert', enabledSkillNames: ['code-review'] }
+    ])
+    expect(first).toEqual([])
+
+    const second = repository.syncBuiltinPresetSkillSeeds([
+      { id: 'deepchat-code-expert', enabledSkillNames: ['code-review', 'git-commit'] },
+      { id: manualAgentId ?? '', enabledSkillNames: ['code-review'] }
+    ])
+    expect(second).toEqual([
+      { agentId: 'deepchat-code-expert', enabledSkillNames: ['code-review', 'git-commit'] }
+    ])
+    expect(JSON.parse(rows.get(manualAgentId).config_json).enabledSkillNames).toEqual(['docx'])
+  })
 })

@@ -97,6 +97,16 @@ const normalizeNullableStringList = (
   )
 }
 
+const areStringListsEqual = (
+  left: string[] | null | undefined,
+  right: string[] | null | undefined
+): boolean => {
+  if (left === right) return true
+  if (!left || !right) return false
+  if (left.length !== right.length) return false
+  return left.every((value, index) => value === right[index])
+}
+
 const mergeNullableStringList = (
   baseValue: string[] | null | undefined,
   overrideValue: string[] | null | undefined
@@ -225,6 +235,41 @@ export class DeepChatAgentRepository {
       configJson: stringifyJson(input.config ? prepareConfigWrite(input.config) : null)
     })
     return rows.get(input.id) ?? null
+  }
+
+  syncBuiltinPresetSkillSeeds(
+    presets: Array<{ id: string; enabledSkillNames?: string[] | null }>
+  ): Array<{ agentId: string; enabledSkillNames: string[] | null }> {
+    const changed: Array<{ agentId: string; enabledSkillNames: string[] | null }> = []
+    this.dependencies.transaction(() => {
+      const { rows } = this.dependencies
+      for (const preset of presets) {
+        if (!Array.isArray(preset.enabledSkillNames)) continue
+        const row = rows.get(preset.id)
+        if (
+          !row ||
+          row.agent_type !== 'deepchat' ||
+          row.source !== 'builtin' ||
+          row.protected !== 1
+        ) {
+          continue
+        }
+
+        const currentConfig = parseJson<DeepChatAgentConfig>(row.config_json) ?? {}
+        const currentNames = normalizeNullableStringList(currentConfig.enabledSkillNames)
+        const presetNames = normalizeNullableStringList(preset.enabledSkillNames)
+        if (areStringListsEqual(currentNames, presetNames)) continue
+
+        rows.update(preset.id, {
+          configJson: stringifyJson({
+            ...currentConfig,
+            enabledSkillNames: presetNames ?? null
+          })
+        })
+        changed.push({ agentId: preset.id, enabledSkillNames: presetNames ?? null })
+      }
+    })
+    return changed
   }
 
   update(agentId: string, updates: UpdateDeepChatAgentInput): AgentRow | null {

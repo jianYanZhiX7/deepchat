@@ -238,6 +238,91 @@ describe('SkillService Agent scopes', () => {
     expect(settingsState?.agents.broken.skills['skill-a'].disabled).toBe(false)
   })
 
+  it('backfills missing preset Skills into a committed Agent scope after an allow-list expansion', async () => {
+    writeSkill(skillsRoot, 'skill-a', '# A')
+    writeSkill(skillsRoot, 'skill-b', '# B')
+    writeSkill(skillsRoot, 'skill-c', '# C')
+    const catalog = ['skill-a', 'skill-b', 'skill-c'].map((name) =>
+      toUnifiedItem(name, path.join(skillsRoot, name))
+    )
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue(catalog)
+    agents.push({ id: 'expert', enabledSkillNames: ['skill-a'] })
+    await (service as any).migrateLegacyAgentSkillScopes()
+
+    const expertRoot = resolveAgentSkillsRoot(skillsRoot, 'expert')
+    expect(fs.readdirSync(expertRoot)).toContain('skill-a')
+    expect(fs.existsSync(path.join(expertRoot, 'skill-b'))).toBe(false)
+
+    agents[agents.findIndex((agent) => agent.id === 'expert')] = {
+      id: 'expert',
+      enabledSkillNames: ['skill-a', 'skill-b', 'skill-c']
+    }
+    await (service as any).reconcileAgentSkillScopes()
+
+    for (const name of ['skill-a', 'skill-b', 'skill-c']) {
+      expect(fs.existsSync(path.join(expertRoot, name, 'SKILL.md'))).toBe(true)
+    }
+    const marker = JSON.parse(
+      fs.readFileSync(path.join(expertRoot, '.deepchat-skill-migration.json'), 'utf-8')
+    ) as { agentId: string; skillNames: string[] }
+    expect(marker.agentId).toBe('expert')
+    expect(marker.skillNames).toEqual(['skill-a', 'skill-b', 'skill-c'])
+    const state = (service as any).getStoredManagementState() as SkillManagementState
+    for (const name of ['skill-a', 'skill-b', 'skill-c']) {
+      expect(state.agents.expert.skills[name].disabled).toBe(false)
+    }
+    await expect(service.getMetadataList('expert')).resolves.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: 'skill-a' }),
+        expect.objectContaining({ name: 'skill-b' }),
+        expect.objectContaining({ name: 'skill-c' })
+      ])
+    )
+  })
+
+  it('leaves user-disabled Skills and marker-less independent scopes untouched during reconcile', async () => {
+    writeSkill(skillsRoot, 'skill-a', '# A')
+    writeSkill(skillsRoot, 'skill-b', '# B')
+    const expertItem = (name: string) => toUnifiedItem(name, path.join(skillsRoot, name))
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue([
+      expertItem('skill-a'),
+      expertItem('skill-b')
+    ])
+    agents.push({ id: 'expert', enabledSkillNames: ['skill-a', 'skill-b'] })
+    await (service as any).migrateLegacyAgentSkillScopes()
+    await service.setSkillDisabledForAgent('expert', 'skill-b', true)
+
+    agents[agents.findIndex((agent) => agent.id === 'expert')] = {
+      id: 'expert',
+      enabledSkillNames: ['skill-a', 'skill-b']
+    }
+    await (service as any).reconcileAgentSkillScopes()
+
+    const state = (service as any).getStoredManagementState() as SkillManagementState
+    expect(state.agents.expert.skills['skill-a'].disabled).toBe(false)
+    expect(state.agents.expert.skills['skill-b'].disabled).toBe(true)
+  })
+
+  it('skips Agent scopes that were not created by the migration during reconcile', async () => {
+    writeSkill(skillsRoot, 'skill-a', '# A')
+    writeSkill(skillsRoot, 'skill-b', '# B')
+    const builtinItem = (name: string) => toUnifiedItem(name, path.join(skillsRoot, name))
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue([
+      builtinItem('skill-a'),
+      builtinItem('skill-b')
+    ])
+    agents.push({ id: 'expert', enabledSkillNames: ['skill-a', 'skill-b'] })
+    const expertRoot = resolveAgentSkillsRoot(skillsRoot, 'expert')
+    fs.mkdirSync(expertRoot, { recursive: true })
+    writeSkill(expertRoot, 'skill-a', '# A')
+
+    await (service as any).reconcileAgentSkillScopes()
+
+    expect(fs.existsSync(path.join(expertRoot, '.deepchat-skill-migration.json'))).toBe(false)
+    expect(fs.existsSync(path.join(expertRoot, 'skill-b'))).toBe(false)
+    expect(fs.existsSync(path.join(expertRoot, 'skill-a', 'SKILL.md'))).toBe(true)
+  })
+
   it('invalidates an empty Agent catalog discovered before its migration copy commits', async () => {
     const builtinRoot = writeSkill(skillsRoot, 'skill-a', '# A')
     agents.push({ id: 'writer', enabledSkillNames: ['skill-a'] })
