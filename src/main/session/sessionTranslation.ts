@@ -2,6 +2,7 @@ import { resolveAssistantModelSelection } from '@/agent/shared/assistantModelSel
 import type { AgentSettingsPort } from '@/agent/settings'
 import type { AgentManager } from '@/agent/manager/agentManager'
 import type { ProviderRuntimePort } from '@shared/types/provider'
+import { DEFAULT_MODEL_FALLBACK } from './defaultModelFallback'
 
 export function resolveTranslationLanguage(locale?: string): string {
   const normalized = locale?.trim().toLowerCase() || ''
@@ -51,12 +52,9 @@ export class SessionTranslation {
     const selection = await resolveAssistantModelSelection(
       this.dependencies,
       agentId ?? 'deepchat',
-      defaultModel?.providerId || '',
-      defaultModel?.modelId || ''
+      defaultModel?.providerId?.trim() || DEFAULT_MODEL_FALLBACK.providerId,
+      defaultModel?.modelId?.trim() || DEFAULT_MODEL_FALLBACK.modelId
     )
-    if (!selection.providerId || !selection.modelId) {
-      throw new Error('No provider or model configured. Please set a default model in settings.')
-    }
 
     const translated = await this.dependencies.providerRuntime.generateCompletion(
       selection.providerId,

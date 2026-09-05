@@ -66,6 +66,29 @@ describe('SessionAssignmentPolicy', () => {
     })
   })
 
+  it('falls back to the built-in default model when nothing is configured', async () => {
+    const { policy, config } = createHarness()
+    config.getDefaultModel.mockReturnValue(null)
+
+    await expect(
+      policy.resolveCreateAssignment({
+        agentId: 'reviewer',
+        preserveExplicitNullProjectDir: false
+      })
+    ).resolves.toMatchObject({
+      agentId: 'reviewer',
+      agentType: 'deepchat',
+      providerId: 'aigotoken',
+      modelId: 'deepseek-v4-pro'
+    })
+
+    await expect(policy.resolveTransferTarget('reviewer', null)).resolves.toMatchObject({
+      agentId: 'reviewer',
+      providerId: 'aigotoken',
+      modelId: 'deepseek-v4-pro'
+    })
+  })
+
   it('owns the full-access default for omitted assignment modes', async () => {
     const { policy } = createHarness()
 

@@ -1578,12 +1578,21 @@ describe('Session application coordinators', () => {
       )
     })
 
-    it('throws when no provider/model available', async () => {
+    it('falls back to the built-in default model when none is configured', async () => {
       providerSettings.getDefaultModel.mockReturnValue(null)
 
-      await expect(
-        lifecycle.createSession({ agentId: 'deepchat', message: 'Hi' }, 1)
-      ).rejects.toThrow('No provider or model configured')
+      await lifecycle.createSession({ agentId: 'deepchat', message: 'Hi' }, 1)
+
+      expect(deepChatAgent.initSession).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({
+          agentId: 'deepchat',
+          providerId: 'aigotoken',
+          modelId: 'deepseek-v4-pro',
+          projectDir: null,
+          permissionMode: 'full_access'
+        })
+      )
     })
 
     it('passes active skills as initial message-scoped skills without pinning the session', async () => {

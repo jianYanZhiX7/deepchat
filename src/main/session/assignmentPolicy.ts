@@ -19,6 +19,7 @@ import {
   normalizeDisabledAgentTools
 } from '@/agent/shared/agentSessionNormalization'
 import { composeSubagentAuthority } from './subagentAuthority'
+import { DEFAULT_MODEL_FALLBACK } from './defaultModelFallback'
 
 const resolveAssignmentPermissionMode = (mode?: PermissionMode | null): PermissionMode =>
   mode ?? 'full_access'
@@ -55,18 +56,17 @@ export class SessionAssignmentPolicy implements SessionAssignmentPolicyPort {
     const providerId =
       descriptor.kind === 'acp'
         ? 'acp'
-        : (input.providerId ??
-          agentConfig?.defaultModelPreset?.providerId ??
-          defaultModel?.providerId ??
-          '')
+        : input.providerId?.trim() ||
+          agentConfig?.defaultModelPreset?.providerId?.trim() ||
+          defaultModel?.providerId?.trim() ||
+          DEFAULT_MODEL_FALLBACK.providerId
     const modelId =
       descriptor.kind === 'acp'
         ? descriptor.id
-        : (input.modelId ?? agentConfig?.defaultModelPreset?.modelId ?? defaultModel?.modelId ?? '')
-
-    if (!providerId || !modelId) {
-      throw new Error('No provider or model configured. Please set a default model in settings.')
-    }
+        : input.modelId?.trim() ||
+          agentConfig?.defaultModelPreset?.modelId?.trim() ||
+          defaultModel?.modelId?.trim() ||
+          DEFAULT_MODEL_FALLBACK.modelId
     this.assertAcpSessionHasWorkdir(providerId, projectDir)
 
     return {
@@ -193,12 +193,13 @@ export class SessionAssignmentPolicy implements SessionAssignmentPolicyPort {
     const agentConfig = await this.config.resolveDeepChatAgentConfig(descriptor.id)
     const defaultModel = this.config.getDefaultModel()
     const providerId =
-      agentConfig?.defaultModelPreset?.providerId?.trim() || defaultModel?.providerId?.trim() || ''
+      agentConfig?.defaultModelPreset?.providerId?.trim() ||
+      defaultModel?.providerId?.trim() ||
+      DEFAULT_MODEL_FALLBACK.providerId
     const modelId =
-      agentConfig?.defaultModelPreset?.modelId?.trim() || defaultModel?.modelId?.trim() || ''
-    if (!providerId || !modelId) {
-      throw new Error('Target DeepChat agent does not have a default model.')
-    }
+      agentConfig?.defaultModelPreset?.modelId?.trim() ||
+      defaultModel?.modelId?.trim() ||
+      DEFAULT_MODEL_FALLBACK.modelId
     if (providerId.toLowerCase() === 'acp') {
       throw new Error('Conversation history cannot be moved to ACP agents.')
     }

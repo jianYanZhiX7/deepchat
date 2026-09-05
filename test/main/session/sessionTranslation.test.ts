@@ -83,14 +83,19 @@ describe('SessionTranslation', () => {
     )
   })
 
-  it('returns empty input without model work and rejects a missing model', async () => {
+  it('returns empty input without model work and falls back to the built-in model when unset', async () => {
     const fixture = createFixture()
     await expect(fixture.service.translate('   ')).resolves.toBe('')
     expect(fixture.resolveBackend).not.toHaveBeenCalled()
 
     fixture.getDefaultModel.mockReturnValue(null)
-    await expect(fixture.service.translate('hello')).rejects.toThrow(
-      'No provider or model configured. Please set a default model in settings.'
+    await expect(fixture.service.translate('hello')).resolves.toBe('translated')
+    expect(fixture.generateCompletion).toHaveBeenCalledWith(
+      'aigotoken',
+      expect.any(Array),
+      'deepseek-v4-pro',
+      0.2,
+      1024
     )
   })
 
