@@ -516,6 +516,10 @@ onMounted(() => {
   watch(
     () => activeTab.value,
     (newVal) => {
+      const currentSegment = route.fullPath.split('?')[0].split('/').filter(Boolean)[0] || ''
+      if (currentSegment === newVal) {
+        return
+      }
       router.push({ name: newVal })
     }
   )

@@ -38,7 +38,9 @@ const translations: Record<string, string> = {
   'settings.plugins.status.disabled': 'Disabled',
   'settings.plugins.status.enabled': 'Enabled',
   'settings.remote.feishu.description': 'Feishu localized description',
-  'settings.remote.feishu.title': 'Feishu localized title'
+  'settings.remote.feishu.title': 'Feishu localized title',
+  'settings.remote.weixinIlink.title': 'Weixin iLink localized title',
+  'settings.remote.weixinIlink.description': 'Weixin iLink localized description'
 }
 
 const AVAILABLE_OCR_STATUS: OcrRuntimeStatus = {
@@ -53,7 +55,10 @@ const AVAILABLE_OCR_STATUS: OcrRuntimeStatus = {
   cache: null
 }
 
-async function mountCatalog(options?: { ocrStatus?: OcrRuntimeStatus | Error }) {
+async function mountCatalog(options?: {
+  ocrStatus?: OcrRuntimeStatus | Error
+  remoteChannels?: Array<Record<string, unknown>>
+}) {
   vi.resetModules()
   vi.clearAllMocks()
 
@@ -81,14 +86,17 @@ async function mountCatalog(options?: { ocrStatus?: OcrRuntimeStatus | Error }) 
     enablePlugin: vi.fn().mockResolvedValue({ ok: true })
   }
   const remoteControlClient = {
-    listRemoteChannels: vi.fn().mockResolvedValue([
-      {
-        id: 'feishu',
-        titleKey: 'settings.remote.feishu.title',
-        descriptionKey: 'settings.remote.feishu.description',
-        supportsCronDelivery: true
-      }
-    ]),
+    listRemoteChannels:
+      options?.remoteChannels !== undefined
+        ? vi.fn().mockResolvedValue(options.remoteChannels)
+        : vi.fn().mockResolvedValue([
+            {
+              id: 'feishu',
+              titleKey: 'settings.remote.feishu.title',
+              descriptionKey: 'settings.remote.feishu.description',
+              supportsCronDelivery: true
+            }
+          ]),
     getChannelStatus: vi.fn().mockResolvedValue({
       channel: 'feishu',
       enabled: false,
@@ -152,6 +160,29 @@ async function mountCatalog(options?: { ocrStatus?: OcrRuntimeStatus | Error }) 
 }
 
 describe('PluginsCatalogPage', () => {
+  it('keeps the Weixin iLink plugin first regardless of enabled state', async () => {
+    const { wrapper } = await mountCatalog({
+      remoteChannels: [
+        {
+          id: 'telegram',
+          titleKey: 'settings.remote.telegram.title',
+          descriptionKey: 'settings.remote.telegram.description'
+        },
+        {
+          id: 'weixin-ilink',
+          titleKey: 'settings.remote.weixinIlink.title',
+          descriptionKey: 'settings.remote.weixinIlink.description'
+        }
+      ]
+    })
+    const cards = wrapper.findAll('article')
+
+    expect(cards).toHaveLength(5)
+    expect(cards[0].text()).toContain('Weixin iLink localized title')
+    expect(cards[0].text()).toContain('Disabled')
+    expect(cards[1].text()).toContain('OCR')
+  })
+
   it('keeps the Feishu official plugin title localized after catalog load', async () => {
     const { wrapper } = await mountCatalog()
 

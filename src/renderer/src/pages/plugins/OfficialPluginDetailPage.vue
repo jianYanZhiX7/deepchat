@@ -68,8 +68,16 @@
           </div>
 
           <div class="flex shrink-0 flex-wrap gap-2">
-            <Button v-if="!remoteEnabled" :disabled="pending" size="sm" @click="enableRemotePlugin">
-              <Icon icon="lucide:power" class="mr-2 size-4" />
+            <Button
+              v-if="!remoteEnabled"
+              :disabled="pending"
+              :size="remoteChannel === 'weixin-ilink' ? 'lg' : 'sm'"
+              @click="enableRemotePlugin"
+            >
+              <Icon
+                icon="lucide:power"
+                :class="remoteChannel === 'weixin-ilink' ? 'mr-2 size-5' : 'mr-2 size-4'"
+              />
               {{ t('settings.plugins.enable') }}
             </Button>
             <Button

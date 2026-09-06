@@ -278,7 +278,11 @@ const catalogItems = computed<CatalogItem[]>(() => {
       return left.enabled ? -1 : 1
     }
   )
-  return [ocrItem, ...extensionItems]
+  const isWeixinIlinkItem = (item: CatalogItem): boolean =>
+    item.kind === 'remote' && item.channel === 'weixin-ilink'
+  const weixinIlinkItems = extensionItems.filter(isWeixinIlinkItem)
+  const otherExtensionItems = extensionItems.filter((item) => !isWeixinIlinkItem(item))
+  return [...weixinIlinkItems, ocrItem, ...otherExtensionItems]
 })
 
 async function loadCatalog(): Promise<void> {

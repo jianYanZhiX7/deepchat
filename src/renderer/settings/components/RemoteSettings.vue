@@ -1265,7 +1265,8 @@
                   <Button
                     data-testid="weixin-ilink-connect-button"
                     variant="outline"
-                    size="sm"
+                    size="lg"
+                    class="border-[#07C160] text-[#07C160] hover:bg-[#07C160]/10 hover:text-[#07C160]"
                     :disabled="
                       weixinIlinkLoginBusy ||
                       saving['weixin-ilink'] ||
@@ -1275,13 +1276,13 @@
                   >
                     <Spinner
                       v-if="weixinIlinkLoginBusy"
-                      class="mr-1 size-4"
+                      class="mr-1 size-5"
                       data-icon="inline-start"
                     />
                     <Icon
                       v-else
                       icon="lucide:qr-code"
-                      class="mr-1 size-4"
+                      class="mr-1 size-5"
                       data-icon="inline-start"
                     />
                     {{ t('settings.remote.weixinIlink.connectButton') }}
