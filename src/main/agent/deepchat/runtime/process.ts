@@ -32,6 +32,7 @@ import {
   type DeepChatLoopOutcome
 } from '@/agent/deepchat/loop/deepChatLoopEngine'
 import { emitDeepChatLoopNotification } from '@/agent/deepchat/loop/notificationObserver'
+import { resolveFriendlyProviderFailureText } from '@/agent/deepchat/loop/providerRetryPolicy'
 import type { OutputSink } from '@/agent/deepchat/loop/ports'
 import { buildTapeToolFactInputs } from '@/tape/application/factPersistence'
 
@@ -585,8 +586,10 @@ function settleLoopOutcome(
     }
 
     console.error(`[ProcessStream] exception after ${eventCount} events:`, outcome.error)
-    const errorMessage =
+    const rawErrorMessage =
       outcome.error instanceof Error ? outcome.error.message : String(outcome.error)
+    const errorMessage =
+      resolveFriendlyProviderFailureText(outcome.error) ?? rawErrorMessage
     const contextWindowError = isContextWindowErrorLike(outcome.error)
     const stopReason = contextWindowError ? 'context_window' : 'provider_error'
     stampRunOutcome(state, 'error', stopReason)

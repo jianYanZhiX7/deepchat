@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   classifyProviderFailure,
   PROVIDER_RETRY_MAX_SERVER_DELAY_MS,
+  resolveFriendlyProviderFailureText,
   resolveProviderRetryDelay,
   waitForProviderRetry
 } from '@/agent/deepchat/loop/providerRetryPolicy'
@@ -184,5 +185,43 @@ describe('provider retry policy', () => {
 
     await expect(waiting).rejects.toBe(reason)
     expect(vi.getTimerCount()).toBe(0)
+  })
+})
+
+describe('resolveFriendlyProviderFailureText', () => {
+  it('maps undici socket termination to a friendly network message', () => {
+    const socketError = Object.assign(new Error('terminated'), { code: 'UND_ERR_SOCKET' })
+
+    expect(resolveFriendlyProviderFailureText(socketError)).toBe('网络连接中断，请重试。')
+    expect(resolveFriendlyProviderFailureText(new Error('wrapper', { cause: socketError }))).toBe(
+      '网络连接中断，请重试。'
+    )
+  })
+
+  it('maps bare terminated stream text without a code', () => {
+    expect(resolveFriendlyProviderFailureText(new Error('terminated'))).toBe(
+      '网络连接中断，请重试。'
+    )
+  })
+
+  it('maps connection reset codes case-insensitively', () => {
+    expect(
+      resolveFriendlyProviderFailureText(Object.assign(new Error('socket reset'), { code: 'econnreset' }))
+    ).toBe('网络连接中断，请重试。')
+  })
+
+  it('reads the code from a nested failure envelope', () => {
+    const enveloped = {
+      message: 'provider stream failed',
+      failure: { code: 'UND_ERR_SOCKET' }
+    }
+
+    expect(resolveFriendlyProviderFailureText(enveloped)).toBe('网络连接中断，请重试。')
+  })
+
+  it('leaves unrelated errors untouched', () => {
+    expect(resolveFriendlyProviderFailureText(new Error('rate limit exceeded'))).toBeNull()
+    expect(resolveFriendlyProviderFailureText(undefined)).toBeNull()
+    expect(resolveFriendlyProviderFailureText('plain string')).toBeNull()
   })
 })

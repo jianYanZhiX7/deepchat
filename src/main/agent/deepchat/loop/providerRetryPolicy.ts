@@ -10,9 +10,30 @@ import {
 } from '@/provider/providerFailure'
 
 export const MAX_TRANSIENT_RETRIES_PER_LOGICAL_ROUND = 2
+export const MAX_OUTPUT_COMMITTED_RETRIES_PER_LOGICAL_ROUND = 1
 export const PROVIDER_RETRY_BASE_DELAY_MS = 500
 export const PROVIDER_RETRY_MAX_BACKOFF_MS = 8_000
 export const PROVIDER_RETRY_MAX_SERVER_DELAY_MS = 60_000
+
+const FRIENDLY_NETWORK_ERROR_TEXT = '网络连接中断，请重试。'
+const NETWORK_SOCKET_ERROR_CODES = new Set([
+  'EAI_AGAIN',
+  'ECONNABORTED',
+  'ECONNREFUSED',
+  'ECONNRESET',
+  'EHOSTUNREACH',
+  'ENETDOWN',
+  'ENETRESET',
+  'ENETUNREACH',
+  'EPIPE',
+  'ESOCKETTIMEDOUT',
+  'ETIMEDOUT',
+  'UND_ERR_BODY_TIMEOUT',
+  'UND_ERR_CONNECT_TIMEOUT',
+  'UND_ERR_HEADERS_TIMEOUT',
+  'UND_ERR_SOCKET'
+])
+const TERMINATED_STREAM_MESSAGE = 'terminated'
 
 const MAX_FAILURE_CAUSE_DEPTH = 5
 const MAX_FAILURE_TEXT_LENGTH = 2_048
@@ -89,6 +110,46 @@ function readProperty(value: unknown, key: PropertyKey): unknown {
   } catch {
     return undefined
   }
+}
+
+function readTransientSocketCode(value: unknown): string | undefined {
+  if (!isRecord(value)) return undefined
+  const code = readProperty(value, 'code')
+  if (typeof code === 'string' && NETWORK_SOCKET_ERROR_CODES.has(code.trim().toUpperCase())) {
+    return code.trim().toUpperCase()
+  }
+  const failure = readProperty(value, 'failure')
+  if (isRecord(failure)) {
+    const failureCode = readProperty(failure, 'code')
+    if (
+      typeof failureCode === 'string' &&
+      NETWORK_SOCKET_ERROR_CODES.has(failureCode.trim().toUpperCase())
+    ) {
+      return failureCode.trim().toUpperCase()
+    }
+  }
+  return undefined
+}
+
+export function resolveFriendlyProviderFailureText(error: unknown): string | null {
+  if (error === null || error === undefined) return null
+  const visited = new Set<unknown>()
+  let current = error
+  for (let depth = 0; depth < MAX_FAILURE_CAUSE_DEPTH && current !== undefined; depth += 1) {
+    if (visited.has(current)) break
+    visited.add(current)
+    if (readTransientSocketCode(current) !== undefined) {
+      return FRIENDLY_NETWORK_ERROR_TEXT
+    }
+    if (isRecord(current)) {
+      const message = readProperty(current, 'message')
+      if (typeof message === 'string' && message.trim().toLowerCase() === TERMINATED_STREAM_MESSAGE) {
+        return FRIENDLY_NETWORK_ERROR_TEXT
+      }
+    }
+    current = readProperty(current, 'cause')
+  }
+  return null
 }
 
 function mergeMetadata(

@@ -28,6 +28,7 @@ import type { PromptAssemblyService } from './promptAssemblyService'
 import type { SessionSettingsCoordinator } from './sessionSettingsCoordinator'
 import type { DeepChatContextCoordinator } from '@/agent/deepchat/loop/contextCoordinator'
 import type { InputPreparationCoordinator } from '@/agent/deepchat/loop/inputPreparationCoordinator'
+import { resolveFriendlyProviderFailureText } from '@/agent/deepchat/loop/providerRetryPolicy'
 import type { PostCompactionPromptAssembler } from '@/agent/deepchat/loop/ports'
 import { resolveEffectiveActiveSkillNames } from '@/agent/deepchat/resources/systemPromptBuilder'
 import { awaitWithAbort } from '@/lib/awaitWithAbort'
@@ -1007,7 +1008,8 @@ export class TurnCoordinator {
           messageId: assistantMessageId
         })
       }
-      const errorMessage = err instanceof Error ? err.message : String(err)
+      const errorMessage =
+        resolveFriendlyProviderFailureText(err) ?? (err instanceof Error ? err.message : String(err))
       const stopReason = isContextWindowErrorLike(err) ? 'context_window' : 'pre_stream_error'
       if (
         !assistantMessageId &&
@@ -1479,7 +1481,9 @@ export class TurnCoordinator {
         this.ports.runLifecycle.schedulePendingInputDrain(sessionId, 'completed')
         return false
       }
-      const errorMessage = error instanceof Error ? error.message : String(error)
+      const errorMessage =
+        resolveFriendlyProviderFailureText(error) ??
+        (error instanceof Error ? error.message : String(error))
       const stopReason = isContextWindowErrorLike(error) ? 'context_window' : 'pre_stream_error'
       const terminalMetadata = stampTerminalMetadata(
         resumeAccounting,

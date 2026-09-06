@@ -37,6 +37,7 @@ import type {
   ToolResultPort
 } from '@/agent/deepchat/loop/ports'
 import { emitDeepChatLoopNotification } from '@/agent/deepchat/loop/notificationObserver'
+import { resolveFriendlyProviderFailureText } from '@/agent/deepchat/loop/providerRetryPolicy'
 import { buildTerminalErrorBlocks } from '@/session/data/transcript'
 import { finalizeTrailingPendingNarrativeBlocks } from './accumulator'
 import type { EchoHandle } from './echo'
@@ -2293,7 +2294,8 @@ export function finalize(state: StreamState, io: IoParams): void {
 }
 
 export function finalizeError(state: StreamState, io: IoParams, error: unknown): void {
-  const errorMessage = error instanceof Error ? error.message : String(error)
+  const rawErrorMessage = error instanceof Error ? error.message : String(error)
+  const errorMessage = resolveFriendlyProviderFailureText(error) ?? rawErrorMessage
   state.blocks = buildTerminalErrorBlocks(state.blocks, errorMessage)
   stampPlanTerminalIfOpen(
     state,

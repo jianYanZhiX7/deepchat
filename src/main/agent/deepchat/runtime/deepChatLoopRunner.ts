@@ -495,6 +495,7 @@ export class DeepChatLoopRunner {
             maxTokens: requestMaxTokens,
             tools: effectiveRequestTools,
             allowTransientRetry,
+            retryAfterOutputCommittedTransient: allowTransientRetry,
             bypassContextBudget: requestBypassesContextBudget,
             fallbackContextLength: contextBudgetLength,
             supportsVision,

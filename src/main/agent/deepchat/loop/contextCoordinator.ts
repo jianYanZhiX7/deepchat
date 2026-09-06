@@ -31,6 +31,7 @@ import {
 import {
   classifyProviderFailure,
   emitProviderRetryLifecycleEvent,
+  MAX_OUTPUT_COMMITTED_RETRIES_PER_LOGICAL_ROUND,
   MAX_TRANSIENT_RETRIES_PER_LOGICAL_ROUND,
   resolveProviderRetryDelay,
   waitForProviderRetry,
@@ -423,6 +424,14 @@ export interface ProviderAttemptInput<TSelection> {
   maxTokens: number
   tools: MCPToolDefinition[]
   allowTransientRetry: boolean
+  /**
+   * When true, a transient failure that arrives after visible output was already
+   * committed triggers exactly one replay of the same request (attemptOrigin
+   * 'transient_retry'). Replays duplicate already-streamed content on screen and
+   * may double-bill output tokens, so this is opt-in for the primary chat path
+   * where a dead-ended request is worse than a single replay.
+   */
+  retryAfterOutputCommittedTransient?: boolean
   bypassContextBudget: boolean
   fallbackContextLength: number
   supportsVision: boolean
@@ -665,6 +674,7 @@ export class DeepChatContextCoordinator {
     let aggregateUsage: ProviderAttemptUsage | null = null
     let usageProjected = false
     let transientRetriesUsed = 0
+    let outputCommittedTransientRetriesUsed = 0
 
     const appendOutcome = (outcome: ProviderAttemptOutcomeInput): void => {
       try {
@@ -781,7 +791,25 @@ export class DeepChatContextCoordinator {
               if (!input.allowTransientRetry) {
                 retryDecision = 'not_retryable'
               } else if (observation.outputCommitted) {
-                retryDecision = 'output_committed'
+                if (
+                  !input.retryAfterOutputCommittedTransient ||
+                  outputCommittedTransientRetriesUsed >=
+                    MAX_OUTPUT_COMMITTED_RETRIES_PER_LOGICAL_ROUND
+                ) {
+                  retryDecision = 'output_committed'
+                } else {
+                  const delay = resolveProviderRetryDelay({
+                    metadata: failureAssessment?.metadata,
+                    retryIndex: transientRetriesUsed
+                  })
+                  if (delay.kind === 'reject') {
+                    retryDecision = 'output_committed'
+                  } else {
+                    outputCommittedTransientRetriesUsed += 1
+                    retryDecision = 'output_committed'
+                    retryPlan = { delayMs: delay.delayMs }
+                  }
+                }
               } else if (transientRetriesUsed >= MAX_TRANSIENT_RETRIES_PER_LOGICAL_ROUND) {
                 retryDecision = 'retry_budget_exhausted'
               } else {

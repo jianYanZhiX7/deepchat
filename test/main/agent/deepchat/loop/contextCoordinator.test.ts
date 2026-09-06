@@ -892,6 +892,98 @@ describe('DeepChatContextCoordinator', () => {
     })
   })
 
+  it('replays once after committed transient output when the retry option is enabled', async () => {
+    const transientFailure: LLMCoreStreamEvent[] = [
+      {
+        type: 'error',
+        error_message: 'temporarily unavailable',
+        failure: {
+          statusCode: 503,
+          retryHeaders: { 'retry-after-ms': '0' }
+        }
+      },
+      { type: 'stop', stop_reason: 'error' }
+    ]
+    const fixture = createAttemptInput({
+      providerEvents: [
+        [{ type: 'text', content: 'partial' }, ...transientFailure],
+        [
+          { type: 'text', content: 'recovered' },
+          { type: 'stop', stop_reason: 'complete' }
+        ]
+      ]
+    })
+    fixture.input.retryAfterOutputCommittedTransient = true
+
+    const events = await collect(
+      new DeepChatContextCoordinator().streamProviderAttempts(fixture.input)
+    )
+
+    expect(events).toEqual([
+      { type: 'text', content: 'partial' },
+      { type: 'text', content: 'recovered' },
+      { type: 'stop', stop_reason: 'complete' }
+    ])
+    expect(fixture.providerRequests.map((request) => request.identity)).toEqual([
+      { logicalRound: 1, requestSeq: 1, physicalAttempt: 1 },
+      { logicalRound: 1, requestSeq: 1, physicalAttempt: 2 }
+    ])
+    expect(fixture.outcomes).toEqual([
+      expectedAttemptOutcome({
+        status: 'error',
+        stopReason: 'error',
+        failureClassification: 'transient',
+        retryDecision: 'output_committed',
+        httpStatus: 503,
+        retryDelayMs: 0
+      }),
+      expectedAttemptOutcome({ physicalAttempt: 2, attemptOrigin: 'transient_retry' })
+    ])
+  })
+
+  it('commits a single replay and then settles when the retry also commits output', async () => {
+    const transientFailure: LLMCoreStreamEvent[] = [
+      {
+        type: 'error',
+        error_message: 'temporarily unavailable',
+        failure: {
+          statusCode: 503,
+          retryHeaders: { 'retry-after-ms': '0' }
+        }
+      },
+      { type: 'stop', stop_reason: 'error' }
+    ]
+    const fixture = createAttemptInput({
+      providerEvents: [
+        [{ type: 'text', content: 'first' }, ...transientFailure],
+        [{ type: 'text', content: 'second' }, ...transientFailure]
+      ]
+    })
+    fixture.input.retryAfterOutputCommittedTransient = true
+
+    const events = await collect(
+      new DeepChatContextCoordinator().streamProviderAttempts(fixture.input)
+    )
+
+    expect(events).toEqual([
+      { type: 'text', content: 'first' },
+      { type: 'text', content: 'second' },
+      ...transientFailure
+    ])
+    expect(fixture.providerRequests).toHaveLength(2)
+    expect(fixture.outcomes.map((outcome) => outcome.retryDecision)).toEqual([
+      'output_committed',
+      'output_committed'
+    ])
+    expect(fixture.outcomes[1]).toMatchObject({
+      physicalAttempt: 2,
+      attemptOrigin: 'transient_retry',
+      status: 'error',
+      failureClassification: 'transient',
+      retryDelayMs: null
+    })
+  })
+
   it('caps transient replay at two retries per logical round', async () => {
     const retryableFailure: LLMCoreStreamEvent[] = [
       {
