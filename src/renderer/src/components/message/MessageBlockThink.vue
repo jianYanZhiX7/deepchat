@@ -33,9 +33,9 @@ const configClient = createConfigClient()
 // kept for potential future scroll anchoring; currently unused
 
 const collapse = ref(false)
-const displayedSeconds = ref(0)
-const UPDATE_INTERVAL = 1000
-const UPDATE_OFFSET = 80
+const displayedSeconds = ref('0.0')
+const UPDATE_INTERVAL = 100
+const UPDATE_OFFSET = 16
 let updateTimer: ReturnType<typeof setTimeout> | null = null
 
 type ReasoningTimeRange = {
@@ -71,8 +71,7 @@ const reasoningDuration = computed(() => {
 
 const updateDisplayedSeconds = () => {
   const normalized = Number.isFinite(reasoningDuration.value) ? reasoningDuration.value : 0
-  const value = Math.max(0, Math.floor(normalized))
-  displayedSeconds.value = value
+  displayedSeconds.value = Math.max(0, normalized).toFixed(1)
 }
 
 const stopTimer = () => {
