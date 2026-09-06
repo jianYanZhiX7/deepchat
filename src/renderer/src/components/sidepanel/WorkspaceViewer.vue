@@ -70,6 +70,18 @@
         >
           {{ t('chat.workspace.files.contextMenu.openFile') }}
         </Button>
+
+        <Button
+          v-if="paneKind === 'info' && openFilePath"
+          variant="default"
+          size="sm"
+          class="h-7 text-xs"
+          data-testid="workspace-open-folder-button"
+          @click="handleRevealInFolder"
+        >
+          <Icon icon="lucide:folder-open" class="mr-1.5 h-3.5 w-3.5" />
+          {{ t('chat.workspace.files.openFolder') }}
+        </Button>
       </div>
     </div>
 
@@ -298,5 +310,17 @@ const handleOpenFile = async () => {
   }
 
   await workspaceClient.openFile(openFilePath.value)
+}
+
+const handleRevealInFolder = async () => {
+  if (!openFilePath.value) {
+    return
+  }
+
+  try {
+    await workspaceClient.revealFileInFolder(openFilePath.value)
+  } catch (error) {
+    console.error(`[Workspace] Failed to reveal path: ${openFilePath.value}`, error)
+  }
 }
 </script>

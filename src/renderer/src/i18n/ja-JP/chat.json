@@ -199,6 +199,7 @@
       "subagents": "サブエージェント"
     },
     "files": {
+      "openFolder": "フォルダーを開く",
       "contextMenu": {
         "insertPath": "入力ボックスに挿入",
         "openFile": "ファイルを開く",

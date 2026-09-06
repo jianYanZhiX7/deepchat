@@ -257,6 +257,7 @@
         "description": "Çalışma alanını ayarlamak için bir klasör seçin veya sürükleyin",
         "button": "Klasör seç"
       },
+      "openFolder": "Klasörü aç",
       "contextMenu": {
         "openFile": "Dosyayı aç",
         "revealInFolder": "Dosya yöneticisinde göster",

@@ -199,6 +199,7 @@
       "subagents": "زیرایجنت‌ها"
     },
     "files": {
+      "openFolder": "باز کردن پوشه",
       "contextMenu": {
         "insertPath": "در جعبه ورودی وارد کنید",
         "openFile": "باز کردن فایل",

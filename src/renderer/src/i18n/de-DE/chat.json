@@ -257,6 +257,7 @@
         "description": "Ordner auswählen oder hierher ziehen, um den Arbeitsbereich festzulegen",
         "button": "Ordner auswählen"
       },
+      "openFolder": "Ordner öffnen",
       "contextMenu": {
         "openFile": "Datei öffnen",
         "revealInFolder": "Im Dateimanager anzeigen",

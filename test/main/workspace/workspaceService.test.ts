@@ -367,6 +367,46 @@ describe('WorkspaceService watchers', () => {
     expect(contentWatcher.close).toHaveBeenCalledTimes(1)
     expect(gitWatcher.close).toHaveBeenCalledTimes(1)
   })
+
+  it('reveals an authorized file in the OS file manager', async () => {
+    await presenter.registerWorkspace(workspacePath)
+    const filePath = path.join(workspacePath, 'notes.txt')
+    fs.writeFileSync(filePath, 'content')
+    const { shell: shellMock } = await import('electron')
+
+    await presenter.revealFileInFolder(filePath)
+
+    expect(shellMock.showItemInFolder).toHaveBeenCalledWith(path.resolve(filePath))
+    expect(shellMock.openPath).not.toHaveBeenCalled()
+  })
+
+  it('falls back to opening the containing folder when reveal is unsupported', async () => {
+    await presenter.registerWorkspace(workspacePath)
+    const filePath = path.join(workspacePath, 'notes.txt')
+    fs.writeFileSync(filePath, 'content')
+    const { shell: shellMock } = await import('electron')
+    vi.mocked(shellMock.showItemInFolder).mockImplementation(() => {
+      throw new Error('reveal unsupported')
+    })
+
+    await presenter.revealFileInFolder(filePath)
+
+    expect(shellMock.showItemInFolder).toHaveBeenCalledWith(path.resolve(filePath))
+    expect(shellMock.openPath).toHaveBeenCalledWith(workspacePath)
+  })
+
+  it('skips unauthorized paths outside registered workspaces', async () => {
+    const outsideDir = fs.mkdtempSync(path.join(os.tmpdir(), 'deepchat-outside-'))
+    const filePath = path.join(outsideDir, 'secret.txt')
+    fs.writeFileSync(filePath, 'secret')
+    const { shell: shellMock } = await import('electron')
+
+    await presenter.revealFileInFolder(filePath)
+
+    expect(shellMock.showItemInFolder).not.toHaveBeenCalled()
+    expect(shellMock.openPath).not.toHaveBeenCalled()
+    fs.rmSync(outsideDir, { recursive: true, force: true })
+  })
 })
 
 describe('WorkspaceService readFilePreview', () => {

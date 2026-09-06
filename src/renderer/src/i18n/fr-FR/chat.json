@@ -199,6 +199,7 @@
       "subagents": "Sous-agents"
     },
     "files": {
+      "openFolder": "Ouvrir le dossier",
       "contextMenu": {
         "insertPath": "Insérer dans la zone de saisie",
         "openFile": "ouvrir le fichier",

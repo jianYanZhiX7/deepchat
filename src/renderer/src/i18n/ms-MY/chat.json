@@ -257,6 +257,7 @@
         "description": "Pilih atau seret folder untuk menyediakan ruang kerja anda",
         "button": "Pilih folder"
       },
+      "openFolder": "Buka folder",
       "contextMenu": {
         "openFile": "buka fail",
         "revealInFolder": "Buka dalam pengurus fail",

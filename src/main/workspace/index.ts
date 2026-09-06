@@ -824,6 +824,20 @@ export class WorkspaceService implements WorkspaceServicePort {
       shell.showItemInFolder(normalizedPath)
     } catch (error) {
       console.error(`[Workspace] Failed to reveal path: ${normalizedPath}`, error)
+      await this.openContainingFolder(normalizedPath)
+    }
+  }
+
+  private async openContainingFolder(normalizedPath: string): Promise<void> {
+    const folderPath = path.dirname(normalizedPath)
+
+    try {
+      const errorMessage = await shell.openPath(folderPath)
+      if (errorMessage) {
+        console.error(`[Workspace] Failed to open containing folder: ${folderPath}`, errorMessage)
+      }
+    } catch (error) {
+      console.error(`[Workspace] Failed to open containing folder: ${folderPath}`, error)
     }
   }
 

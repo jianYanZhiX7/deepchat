@@ -342,6 +342,7 @@
         "description": "Select or drag a folder to set the workspace",
         "button": "Select folder"
       },
+      "openFolder": "Open folder",
       "contextMenu": {
         "openFile": "Open file",
         "revealInFolder": "Show in file manager",

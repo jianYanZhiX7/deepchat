@@ -199,6 +199,7 @@
       "subagents": "Субагенты"
     },
     "files": {
+      "openFolder": "Открыть папку",
       "contextMenu": {
         "insertPath": "Вставить в поле ввода",
         "openFile": "открыть файл",

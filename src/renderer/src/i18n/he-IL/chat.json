@@ -199,6 +199,7 @@
       "subagents": "סוכני משנה"
     },
     "files": {
+      "openFolder": "פתח תיקייה",
       "contextMenu": {
         "insertPath": "הכנס לתוך תיבת הקלט",
         "openFile": "לפתוח קובץ",

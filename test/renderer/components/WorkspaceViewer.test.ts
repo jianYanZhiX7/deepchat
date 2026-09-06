@@ -47,6 +47,7 @@ describe('WorkspaceViewer', () => {
     }
 
     const openFileMock = vi.fn().mockResolvedValue(undefined)
+    const revealFileInFolderMock = vi.fn().mockResolvedValue(undefined)
 
     vi.doMock('vue-i18n', () => ({
       useI18n: () => ({
@@ -67,7 +68,8 @@ describe('WorkspaceViewer', () => {
 
     vi.doMock('@api/WorkspaceClient', () => ({
       createWorkspaceClient: () => ({
-        openFile: openFileMock
+        openFile: openFileMock,
+        revealFileInFolder: revealFileInFolderMock
       })
     }))
 
@@ -138,7 +140,7 @@ describe('WorkspaceViewer', () => {
       }
     })
 
-    return { wrapper, sidepanelStore, openFileMock }
+    return { wrapper, sidepanelStore, openFileMock, revealFileInFolderMock }
   }
 
   it('shows a maximize button and emits toggle-fullscreen', async () => {
@@ -406,5 +408,85 @@ describe('WorkspaceViewer', () => {
     )
     expect(wrapper.find('[data-testid="preview-pane"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="code-pane"]').exists()).toBe(false)
+  })
+
+  it('shows open folder button for unsupported files and reveals in file manager', async () => {
+    const { wrapper, revealFileInFolderMock } = await setup({
+      sessionState: {
+        selectedArtifactContext: null,
+        selectedFilePath: 'C:/repo/archive.zip',
+        selectedDiffPath: null,
+        viewMode: 'preview',
+        sections: {
+          files: true,
+          git: false,
+          artifacts: true
+        }
+      },
+      props: {
+        artifact: null,
+        filePreview: {
+          path: 'C:/repo/archive.zip',
+          relativePath: 'archive.zip',
+          name: 'archive.zip',
+          mimeType: 'application/zip',
+          kind: 'binary',
+          content: '',
+          metadata: {
+            fileName: 'archive.zip',
+            fileSize: 4096,
+            fileCreated: new Date('2024-01-01T00:00:00Z'),
+            fileModified: new Date('2024-01-02T00:00:00Z')
+          }
+        }
+      }
+    })
+
+    const openFolderButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('chat.workspace.files.openFolder'))
+    expect(openFolderButton).toBeTruthy()
+
+    await openFolderButton!.trigger('click')
+    expect(revealFileInFolderMock).toHaveBeenCalledWith('C:/repo/archive.zip')
+  })
+
+  it('hides open folder button for previewable files', async () => {
+    const { wrapper } = await setup({
+      sessionState: {
+        selectedArtifactContext: null,
+        selectedFilePath: 'C:/repo/README.md',
+        selectedDiffPath: null,
+        viewMode: 'preview',
+        sections: {
+          files: true,
+          git: false,
+          artifacts: true
+        }
+      },
+      props: {
+        artifact: null,
+        filePreview: {
+          path: 'C:/repo/README.md',
+          relativePath: 'README.md',
+          name: 'README.md',
+          mimeType: 'text/markdown',
+          kind: 'markdown',
+          content: '# Hello',
+          language: 'markdown',
+          metadata: {
+            fileName: 'README.md',
+            fileSize: 7,
+            fileCreated: new Date('2024-01-01T00:00:00Z'),
+            fileModified: new Date('2024-01-02T00:00:00Z')
+          }
+        }
+      }
+    })
+
+    const openFolderButton = wrapper
+      .findAll('button')
+      .find((button) => button.text().includes('chat.workspace.files.openFolder'))
+    expect(openFolderButton).toBeFalsy()
   })
 })

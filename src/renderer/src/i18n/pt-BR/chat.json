@@ -199,6 +199,7 @@
       "subagents": "Subagentes"
     },
     "files": {
+      "openFolder": "Abrir pasta",
       "contextMenu": {
         "insertPath": "Insira na caixa de entrada",
         "openFile": "abrir arquivo",

@@ -199,6 +199,7 @@
       "subagents": "하위 에이전트"
     },
     "files": {
+      "openFolder": "폴더 열기",
       "contextMenu": {
         "insertPath": "입력창에 삽입",
         "openFile": "파일 열기",

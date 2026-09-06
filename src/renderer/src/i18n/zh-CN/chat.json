@@ -342,6 +342,7 @@
         "description": "选择或拖拽文件夹来设置工作区",
         "button": "选择文件夹"
       },
+      "openFolder": "打开文件夹",
       "contextMenu": {
         "openFile": "打开文件",
         "revealInFolder": "在文件管理器中打开",

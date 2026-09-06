@@ -207,6 +207,7 @@
       "subagents": "subagent"
     },
     "files": {
+      "openFolder": "打開資料夾",
       "contextMenu": {
         "insertPath": "插入到輸入框",
         "openFile": "打開文件",

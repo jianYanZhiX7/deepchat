@@ -257,6 +257,7 @@
         "description": "Seleziona o trascina una cartella per impostare il workspace",
         "button": "Seleziona cartella"
       },
+      "openFolder": "Apri cartella",
       "contextMenu": {
         "openFile": "Apri file",
         "revealInFolder": "Mostra nel file manager",

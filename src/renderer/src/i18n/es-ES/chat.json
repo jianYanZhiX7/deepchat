@@ -257,6 +257,7 @@
         "description": "Selecciona o arrastra una carpeta para configurar el espacio de trabajo",
         "button": "Seleccionar carpeta"
       },
+      "openFolder": "Abrir carpeta",
       "contextMenu": {
         "openFile": "Abrir archivo",
         "revealInFolder": "Mostrar en el administrador de archivos",

@@ -257,6 +257,7 @@
         "description": "Wybierz lub przeciągnij folder, aby ustawić obszar roboczy",
         "button": "Wybierz folder"
       },
+      "openFolder": "Otwórz folder",
       "contextMenu": {
         "openFile": "Otwórz plik",
         "revealInFolder": "Pokaż w menedżerze plików",

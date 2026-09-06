@@ -199,6 +199,7 @@
       "subagents": "Underagenter"
     },
     "files": {
+      "openFolder": "Åbn mappe",
       "contextMenu": {
         "insertPath": "Indsæt i inputboksen",
         "openFile": "åbne fil",

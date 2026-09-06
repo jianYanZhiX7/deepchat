@@ -257,6 +257,7 @@
         "description": "Chọn hoặc kéo thư mục để đặt không gian làm việc",
         "button": "Chọn thư mục"
       },
+      "openFolder": "Mở thư mục",
       "contextMenu": {
         "openFile": "Mở tập tin",
         "revealInFolder": "Hiển thị trong trình quản lý tập tin",
