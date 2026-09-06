@@ -907,27 +907,22 @@ export function recordToChatMessages(
 
   const blocks = JSON.parse(record.content) as AssistantMessageBlock[]
   const errorSummary = buildAssistantErrorSummary(blocks, record)
-  const combinedText = blocks
-    .filter((block) => block.type === 'content' || block.type === 'reasoning_content')
-    .map((block) => block.content)
-    .join('')
-  const text = blocks
-    .filter((block) => block.type === 'content')
-    .map((block) => block.content)
-    .join('')
-  const reasoning = blocks
-    .filter((block) => block.type === 'reasoning_content')
-    .map((block) => block.content)
-    .join('')
-  const shouldPreserveReasoning = preserveInterleavedReasoning && Boolean(reasoning)
+  const rounds = groupAssistantMessageRounds(blocks)
+  const shouldPreserveReasoning = preserveInterleavedReasoning
   const shouldPreserveEmptyReasoning =
     preserveInterleavedReasoning && preserveEmptyInterleavedReasoning
-  const contentParts = blocks
-    .filter(
+
+  const result: ChatMessage[] = []
+  let recordHasToolCalls = false
+  let tailMessage: ChatMessage | null = null
+
+  for (const round of rounds) {
+    const contentBlocks = round.filter(
       (block): block is AssistantMessageBlock & { content: string } =>
         block.type === 'content' && typeof block.content === 'string' && block.content.length > 0
     )
-    .map((block) => {
+    const contentText = contentBlocks.map((block) => block.content).join('')
+    const contentParts = contentBlocks.map((block) => {
       const providerOptions = getBlockProviderOptions(block)
       return {
         type: 'text' as const,
@@ -935,115 +930,167 @@ export function recordToChatMessages(
         ...(providerOptions ? { provider_options: providerOptions } : {})
       }
     })
-  const assistantContent = contentParts.some((part) => part.provider_options) ? contentParts : text
-  const applyReasoningContent = (
-    assistantMessage: ChatMessage,
-    allowEmptyReasoning: boolean = false
-  ): ChatMessage => {
-    if (shouldPreserveReasoning || (allowEmptyReasoning && shouldPreserveEmptyReasoning)) {
-      assistantMessage.reasoning_content = reasoning
-      const reasoningProviderOptions = blocks
-        .filter((block) => block.type === 'reasoning_content')
-        .map((block) => getBlockProviderOptions(block))
-        .find(Boolean)
-      if (reasoningProviderOptions) {
-        assistantMessage.reasoning_provider_options = reasoningProviderOptions
-      }
-    }
-    return assistantMessage
-  }
-
-  const toolCallBlocks = blocks.filter(
-    (block) =>
-      block.type === 'tool_call' &&
-      block.tool_call &&
-      typeof block.tool_call.id === 'string' &&
-      typeof block.tool_call.name === 'string' &&
-      typeof block.tool_call.response === 'string' &&
-      block.tool_call.response.length > 0
-  )
-
-  if (toolCallBlocks.length === 0) {
-    const contentWithErrorSummary = appendAssistantTextContent(
-      preserveEmptyInterleavedReasoning || shouldPreserveReasoning
-        ? assistantContent
-        : combinedText,
-      errorSummary
+    const assistantContent = contentParts.some((part) => part.provider_options)
+      ? contentParts
+      : contentText
+    const reasoningBlocks = round.filter(
+      (block): block is AssistantMessageBlock & { content: string } =>
+        block.type === 'reasoning_content' && typeof block.content === 'string'
     )
-    if (shouldPreserveReasoning) {
-      const message = applyReasoningContent({ role: 'assistant', content: contentWithErrorSummary })
-      return hasPromptMessageContent(message) ? [message] : []
-    }
-    if (preserveEmptyInterleavedReasoning) {
-      const message: ChatMessage = { role: 'assistant', content: contentWithErrorSummary }
-      return hasPromptMessageContent(message) ? [message] : []
-    }
-    const message: ChatMessage = { role: 'assistant', content: contentWithErrorSummary }
-    return hasPromptMessageContent(message) ? [message] : []
-  }
+    const reasoningText = reasoningBlocks.map((block) => block.content).join('')
+    const combinedRoundText = round
+      .filter((block) => block.type === 'content' || block.type === 'reasoning_content')
+      .map((block) => block.content ?? '')
+      .join('')
+    const reasoningProviderOptions = reasoningBlocks
+      .map((block) => getBlockProviderOptions(block))
+      .find(Boolean)
 
-  const toolCalls: NonNullable<ChatMessage['tool_calls']> = []
-  for (const block of toolCallBlocks) {
-    const toolCall = block.tool_call
-    if (!toolCall?.id || !toolCall.name) {
+    const toolCalls: NonNullable<ChatMessage['tool_calls']> = []
+    for (const block of round) {
+      const toolCall = block.tool_call
+      if (
+        block.type !== 'tool_call' ||
+        !toolCall?.id ||
+        !toolCall.name ||
+        typeof toolCall.response !== 'string' ||
+        toolCall.response.length === 0
+      ) {
+        continue
+      }
+      const providerOptions = getBlockProviderOptions(block)
+      toolCalls.push({
+        id: toolCall.id,
+        type: 'function',
+        function: { name: toolCall.name, arguments: toolCall.params || '{}' },
+        ...(providerOptions ? { provider_options: providerOptions } : {})
+      })
+    }
+
+    if (toolCalls.length === 0 && contentBlocks.length === 0 && !reasoningText) {
       continue
     }
-    toolCalls.push({
-      id: toolCall.id,
-      type: 'function',
-      function: { name: toolCall.name, arguments: toolCall.params || '{}' },
-      ...(getBlockProviderOptions(block)
-        ? { provider_options: getBlockProviderOptions(block) }
-        : {})
-    })
-  }
 
-  if (toolCalls.length === 0) {
-    const contentWithErrorSummary = appendAssistantTextContent(
-      preserveEmptyInterleavedReasoning || shouldPreserveReasoning
-        ? assistantContent
-        : combinedText,
-      errorSummary
-    )
-    if (shouldPreserveReasoning) {
-      const message = applyReasoningContent({ role: 'assistant', content: contentWithErrorSummary })
-      return hasPromptMessageContent(message) ? [message] : []
+    if (toolCalls.length > 0) {
+      const assistantMessage: ChatMessage = {
+        role: 'assistant',
+        content: assistantContent,
+        tool_calls: toolCalls
+      }
+      if (
+        (shouldPreserveReasoning && Boolean(reasoningText)) ||
+        shouldPreserveEmptyReasoning
+      ) {
+        assistantMessage.reasoning_content = reasoningText
+        if (reasoningProviderOptions) {
+          assistantMessage.reasoning_provider_options = reasoningProviderOptions
+        }
+      }
+      result.push(assistantMessage)
+      recordHasToolCalls = true
+      for (const block of round) {
+        if (block.type !== 'tool_call' || !block.tool_call?.id) {
+          continue
+        }
+        if (
+          typeof block.tool_call.response !== 'string' ||
+          block.tool_call.response.length === 0
+        ) {
+          continue
+        }
+        const approvedAppContext = formatApprovedMcpAppModelContext(block)
+        const toolContent = [
+          block.tool_call.response,
+          approvedAppContext ? `[MCP App approved context]\n${approvedAppContext}` : ''
+        ]
+          .filter(Boolean)
+          .join('\n\n')
+        result.push({
+          role: 'tool',
+          tool_call_id: block.tool_call.id,
+          content: toolContent
+        })
+      }
+      continue
     }
-    if (preserveEmptyInterleavedReasoning) {
-      const message: ChatMessage = { role: 'assistant', content: contentWithErrorSummary }
-      return hasPromptMessageContent(message) ? [message] : []
+
+    const roundPreservesReasoning = shouldPreserveReasoning && Boolean(reasoningText)
+    const message: ChatMessage = {
+      role: 'assistant',
+      content:
+        roundPreservesReasoning || shouldPreserveEmptyReasoning
+          ? assistantContent
+          : combinedRoundText
     }
-    const message: ChatMessage = { role: 'assistant', content: contentWithErrorSummary }
-    return hasPromptMessageContent(message) ? [message] : []
+    if (roundPreservesReasoning) {
+      message.reasoning_content = reasoningText
+      if (reasoningProviderOptions) {
+        message.reasoning_provider_options = reasoningProviderOptions
+      }
+    }
+    tailMessage = message
   }
 
-  const assistantMessage: ChatMessage = {
-    role: 'assistant',
-    content: assistantContent,
-    tool_calls: toolCalls
-  }
-  applyReasoningContent(assistantMessage, true)
-
-  const result: ChatMessage[] = [assistantMessage]
-  for (const block of toolCallBlocks) {
-    const approvedAppContext = formatApprovedMcpAppModelContext(block)
-    const toolContent = [
-      block.tool_call!.response || '',
-      approvedAppContext ? `[MCP App approved context]\n${approvedAppContext}` : ''
-    ]
-      .filter(Boolean)
-      .join('\n\n')
-    result.push({
-      role: 'tool',
-      tool_call_id: block.tool_call!.id,
-      content: toolContent
-    })
-  }
   if (errorSummary) {
-    result.push({ role: 'assistant', content: errorSummary })
+    if (recordHasToolCalls) {
+      result.push({ role: 'assistant', content: errorSummary })
+    } else if (tailMessage) {
+      tailMessage.content = appendAssistantTextContent(tailMessage.content, errorSummary)
+      if (hasPromptMessageContent(tailMessage)) {
+        result.push(tailMessage)
+      }
+    } else {
+      result.push({ role: 'assistant', content: errorSummary })
+    }
+  } else if (tailMessage && hasPromptMessageContent(tailMessage)) {
+    result.push(tailMessage)
   }
 
   return result
+}
+
+function isSettledToolCallBlock(block: AssistantMessageBlock): boolean {
+  return (
+    block.type === 'tool_call' &&
+    typeof block.tool_call?.response === 'string' &&
+    block.tool_call.response.length > 0
+  )
+}
+
+function groupAssistantMessageRounds(blocks: AssistantMessageBlock[]): AssistantMessageBlock[][] {
+  const rounds: AssistantMessageBlock[][] = []
+  let current: AssistantMessageBlock[] = []
+  let previousRoundEndedWithToolCall = false
+
+  for (const block of blocks) {
+    if (
+      block.type !== 'reasoning_content' &&
+      block.type !== 'content' &&
+      block.type !== 'tool_call'
+    ) {
+      continue
+    }
+    if (
+      previousRoundEndedWithToolCall &&
+      (block.type === 'reasoning_content' || block.type === 'content')
+    ) {
+      if (current.length > 0) {
+        rounds.push(current)
+        current = []
+      }
+      previousRoundEndedWithToolCall = false
+    }
+    current.push(block)
+    if (isSettledToolCallBlock(block)) {
+      previousRoundEndedWithToolCall = true
+    }
+  }
+
+  if (current.length > 0) {
+    rounds.push(current)
+  }
+
+  return rounds
 }
 
 function isRetiredWorkflowResultRecord(record: ChatMessageRecord): boolean {

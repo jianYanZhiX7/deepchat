@@ -627,6 +627,7 @@ export function resolveInterleavedReasoningConfig(
   const reasoningSupported = capabilitySnapshot.supportsReasoning
   const preserveReasoningContent =
     isDeepSeekSeries ||
+    reasoningSupported ||
     (explicitSessionSetting !== undefined ? explicitSessionSetting : portraitInterleaved)
 
   return {

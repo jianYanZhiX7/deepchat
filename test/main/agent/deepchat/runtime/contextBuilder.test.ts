@@ -2421,3 +2421,151 @@ describe('cache-aware context assembly', () => {
     ])
   })
 })
+
+describe('recordToChatMessages round splitting', () => {
+  function makeMergedRoundsRecord(status: 'sent' | 'error' = 'error') {
+    const content = [
+      {
+        type: 'reasoning_content',
+        content: 'plan skill',
+        status: 'success',
+        timestamp: 1
+      },
+      {
+        type: 'tool_call',
+        status: 'success',
+        timestamp: 2,
+        tool_call: {
+          id: 'call-skill',
+          name: 'skill_view',
+          params: '{"name":"pptx"}',
+          response: 'SKILL_DOC'
+        }
+      },
+      {
+        type: 'reasoning_content',
+        content: 'ask user',
+        status: 'success',
+        timestamp: 3
+      },
+      { type: 'content', content: '请问用途？', status: 'success', timestamp: 4 },
+      {
+        type: 'tool_call',
+        status: 'success',
+        timestamp: 5,
+        tool_call: {
+          id: 'call-question',
+          name: 'deepchat_question',
+          params: '{"question":"用途?"}',
+          response: '商务汇报'
+        }
+      },
+      {
+        type: 'action',
+        action_type: 'question_request',
+        status: 'success',
+        timestamp: 6,
+        content: '',
+        tool_call: { id: 'call-question', name: 'deepchat_question', params: '{"question":"用途?"}' }
+      },
+      ...(status === 'error'
+        ? [{ type: 'error', content: 'boom', status: 'error', timestamp: 7 }]
+        : [])
+    ]
+    return {
+      id: 'asst-rounds',
+      sessionId: 's1',
+      orderSeq: 2,
+      role: 'assistant' as const,
+      content: JSON.stringify(content),
+      status,
+      isContextEdge: 0,
+      metadata: '{}',
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }
+  }
+
+  const skillViewCall = {
+    id: 'call-skill',
+    type: 'function' as const,
+    function: { name: 'skill_view', arguments: '{"name":"pptx"}' }
+  }
+  const questionCall = {
+    id: 'call-question',
+    type: 'function' as const,
+    function: { name: 'deepchat_question', arguments: '{"question":"用途?"}' }
+  }
+
+  it('splits merged rounds into round-aligned assistant/tool pairs with per-round reasoning', () => {
+    const result = recordToChatMessages(makeMergedRoundsRecord('error'), false, true, false)
+
+    expect(result).toEqual([
+      {
+        role: 'assistant',
+        content: '',
+        reasoning_content: 'plan skill',
+        tool_calls: [skillViewCall]
+      },
+      { role: 'tool', tool_call_id: 'call-skill', content: 'SKILL_DOC' },
+      {
+        role: 'assistant',
+        content: '请问用途？',
+        reasoning_content: 'ask user',
+        tool_calls: [questionCall]
+      },
+      { role: 'tool', tool_call_id: 'call-question', content: '商务汇报' },
+      { role: 'assistant', content: '[Generation failed]\nReason: boom' }
+    ])
+  })
+
+  it('drops reasoning per round and keeps the round order when preservation is disabled', () => {
+    const result = recordToChatMessages(makeMergedRoundsRecord('error'), false, false, false)
+
+    expect(result).toEqual([
+      {
+        role: 'assistant',
+        content: '',
+        tool_calls: [skillViewCall]
+      },
+      { role: 'tool', tool_call_id: 'call-skill', content: 'SKILL_DOC' },
+      {
+        role: 'assistant',
+        content: '请问用途？',
+        tool_calls: [questionCall]
+      },
+      { role: 'tool', tool_call_id: 'call-question', content: '商务汇报' },
+      { role: 'assistant', content: '[Generation failed]\nReason: boom' }
+    ])
+  })
+
+  it('keeps a trailing content-only round as its own assistant message after tool results', () => {
+    const record = makeMergedRoundsRecord('sent')
+    record.content = JSON.stringify([
+      { type: 'reasoning_content', content: 'think', status: 'success', timestamp: 1 },
+      {
+        type: 'tool_call',
+        status: 'success',
+        timestamp: 2,
+        tool_call: { id: 'call-edit', name: 'edit', params: '{}', response: 'ok' }
+      },
+      { type: 'content', content: 'Final answer', status: 'success', timestamp: 3 }
+    ])
+    record.status = 'sent'
+
+    const result = recordToChatMessages(record, false, true, false)
+
+    expect(result).toEqual([
+      {
+        role: 'assistant',
+        content: '',
+        reasoning_content: 'think',
+        tool_calls: [
+          { id: 'call-edit', type: 'function', function: { name: 'edit', arguments: '{}' } }
+        ]
+      },
+      { role: 'tool', tool_call_id: 'call-edit', content: 'ok' },
+      { role: 'assistant', content: 'Final answer' }
+    ])
+  })
+})

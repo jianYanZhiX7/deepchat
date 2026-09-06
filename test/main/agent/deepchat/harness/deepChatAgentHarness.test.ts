@@ -5523,8 +5523,31 @@ describe('DeepChatAgentHarness', () => {
         'gpt-4',
         disabled
       )
-      expect(interleavedConfig.preserveReasoningContent).toBe(false)
+      expect(interleavedConfig.preserveReasoningContent).toBe(true)
       expect(interleavedConfig.preserveEmptyReasoningContent).toBe(false)
+
+      const nonReasoningCapableConfig = resolveInterleavedReasoningConfig(
+        providerSettings,
+        'openai',
+        'gpt-4',
+        disabled,
+        { reasoningPortrait: null, supportsReasoning: false } as any
+      )
+      expect(nonReasoningCapableConfig.preserveReasoningContent).toBe(false)
+      expect(nonReasoningCapableConfig.preserveEmptyReasoningContent).toBe(false)
+
+      const doubaoConfig = resolveInterleavedReasoningConfig(
+        providerSettings,
+        'aigotoken',
+        'Doubao-Seed-2.0-Pro',
+        {} as any,
+        {
+          reasoningPortrait: { supported: true, defaultEnabled: true },
+          supportsReasoning: true
+        } as any
+      )
+      expect(doubaoConfig.preserveReasoningContent).toBe(true)
+      expect(doubaoConfig.preserveEmptyReasoningContent).toBe(false)
 
       const deepseekDisabledConfig = resolveInterleavedReasoningConfig(
         providerSettings,
