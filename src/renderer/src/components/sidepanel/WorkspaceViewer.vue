@@ -72,7 +72,7 @@
         </Button>
 
         <Button
-          v-if="paneKind === 'info' && openFilePath"
+          v-if="openFilePath"
           variant="default"
           size="sm"
           class="h-7 text-xs"

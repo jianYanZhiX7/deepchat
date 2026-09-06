@@ -451,8 +451,8 @@ describe('WorkspaceViewer', () => {
     expect(revealFileInFolderMock).toHaveBeenCalledWith('C:/repo/archive.zip')
   })
 
-  it('hides open folder button for previewable files', async () => {
-    const { wrapper } = await setup({
+  it('shows open folder button for previewable files as well', async () => {
+    const { wrapper, revealFileInFolderMock } = await setup({
       sessionState: {
         selectedArtifactContext: null,
         selectedFilePath: 'C:/repo/README.md',
@@ -487,6 +487,9 @@ describe('WorkspaceViewer', () => {
     const openFolderButton = wrapper
       .findAll('button')
       .find((button) => button.text().includes('chat.workspace.files.openFolder'))
-    expect(openFolderButton).toBeFalsy()
+    expect(openFolderButton).toBeTruthy()
+
+    await openFolderButton!.trigger('click')
+    expect(revealFileInFolderMock).toHaveBeenCalledWith('C:/repo/README.md')
   })
 })
