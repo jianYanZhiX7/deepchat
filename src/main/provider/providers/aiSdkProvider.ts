@@ -1957,6 +1957,7 @@ export class AiSdkProvider extends BaseLLMProvider {
       description?: unknown
       type?: unknown
       supported_endpoint_types?: unknown
+      context_window?: unknown
       context_length?: unknown
       contextLength?: unknown
       input_token_limit?: unknown
@@ -2009,6 +2010,7 @@ export class AiSdkProvider extends BaseLLMProvider {
         )
         const supportedEndpointTypes = rawSupportedEndpointTypes
         const contextLengthCandidate =
+          toPositiveFiniteNumber(rawModel.context_window) ??
           toPositiveFiniteNumber(rawModel.context_length) ??
           toPositiveFiniteNumber(rawModel.contextLength) ??
           toPositiveFiniteNumber(rawModel.input_token_limit) ??

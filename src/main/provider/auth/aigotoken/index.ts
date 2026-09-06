@@ -44,6 +44,24 @@ type TokenResponse = {
   error_description?: string
 }
 
+type AigotokenModelRecord = {
+  id: string
+  owned_by?: string
+  context_window?: unknown
+  context_length?: unknown
+  contextLength?: unknown
+  input_token_limit?: unknown
+  max_input_tokens?: unknown
+  max_tokens?: unknown
+  max_output_tokens?: unknown
+  output_token_limit?: unknown
+}
+
+function toPositiveTokens(value: unknown): number | undefined {
+  const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : undefined
+}
+
 let globalAigotokenAuth: AigotokenAuth | null = null
 
 function sanitizeError(error: unknown): string {
@@ -294,6 +312,30 @@ export class AigotokenAuth {
     }
   }
 
+  private mapFetchedModels(fetched: AigotokenModelRecord[]): MODEL_META[] {
+    return fetched.map((model) => {
+      const contextLength =
+        toPositiveTokens(model.context_window) ??
+        toPositiveTokens(model.context_length) ??
+        toPositiveTokens(model.contextLength) ??
+        toPositiveTokens(model.input_token_limit) ??
+        toPositiveTokens(model.max_input_tokens)
+      const maxTokens =
+        toPositiveTokens(model.max_tokens) ??
+        toPositiveTokens(model.max_output_tokens) ??
+        toPositiveTokens(model.output_token_limit)
+      return {
+        id: model.id,
+        name: model.id,
+        group: 'aigotoken',
+        providerId: 'aigotoken',
+        enabled: true,
+        ...(contextLength !== undefined ? { contextLength } : {}),
+        ...(maxTokens !== undefined ? { maxTokens } : {})
+      }
+    })
+  }
+
   private async fetchAndStoreModels(apiKey: string): Promise<void> {
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), AIGOTOKEN_REQUEST_TIMEOUT_MS)
@@ -312,17 +354,9 @@ export class AigotokenAuth {
         return
       }
 
-      const payload = (await response.json()) as {
-        data?: { id: string; owned_by?: string }[]
-      }
+      const payload = (await response.json()) as { data?: AigotokenModelRecord[] }
 
-      const models: MODEL_META[] = (payload.data || []).map((model) => ({
-        id: model.id,
-        name: model.id,
-        group: 'aigotoken',
-        providerId: 'aigotoken',
-        enabled: true
-      }))
+      const models = this.mapFetchedModels(payload.data || [])
 
       if (models.length > 0) {
         this.providerSettings.setProviderModels('aigotoken', models)
@@ -367,22 +401,14 @@ export class AigotokenAuth {
         return false
       }
 
-      const payload = (await response.json()) as {
-        data?: { id: string; owned_by?: string }[]
-      }
+      const payload = (await response.json()) as { data?: AigotokenModelRecord[] }
 
       const fetched = payload.data || []
       if (fetched.length === 0) {
         return false
       }
 
-      const models: MODEL_META[] = fetched.map((model) => ({
-        id: model.id,
-        name: model.id,
-        group: 'aigotoken',
-        providerId: 'aigotoken',
-        enabled: true
-      }))
+      const models = this.mapFetchedModels(fetched)
 
       const existingIds = new Set(
         this.providerSettings.getProviderModels('aigotoken').map((m) => m.id)
