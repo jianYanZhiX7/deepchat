@@ -1033,10 +1033,12 @@ export class AgentToolManager {
       requiredPermission: this.getRequiredFilePermission(toolName),
       activeSkillNames: options?.activeSkillNames
     })
-    const protectedDirectoryRules = await this.buildProtectedSkillDirectoryRules(
-      conversationId,
-      options?.activeSkillNames
-    )
+    const protectedDirectoryRules = allowExternalFileAccess
+      ? []
+      : await this.buildProtectedSkillDirectoryRules(
+          conversationId,
+          options?.activeSkillNames
+        )
 
     if (toolName === 'exec') {
       if (!this.bashHandler) {
@@ -2189,7 +2191,9 @@ export class AgentToolManager {
         includeRuntimeRoots: toolName !== 'exec',
         requiredPermission: this.getRequiredFilePermission(toolName)
       })
-      const protectedDirectoryRules = await this.buildProtectedSkillDirectoryRules(conversationId)
+      const protectedDirectoryRules = allowExternalFileAccess
+        ? []
+        : await this.buildProtectedSkillDirectoryRules(conversationId)
       const fileSystemHandler = new AgentFileSystemHandler(allowedDirectories, {
         conversationId,
         allowExternalAccess: allowExternalFileAccess,

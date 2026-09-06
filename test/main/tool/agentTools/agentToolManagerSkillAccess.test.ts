@@ -251,7 +251,7 @@ describe('AgentToolManager skill file access', () => {
       }
     ]
   ] as const)(
-    'hard-denies %s access to another Agent scope in full access mode',
+    'allows %s access to another Agent scope in full access mode',
     async (toolName, args) => {
       const manager = buildManager()
 
@@ -259,10 +259,13 @@ describe('AgentToolManager skill file access', () => {
         manager.callTool(toolName, { ...args, path: args.path() }, 'conv1', {
           allowExternalFileAccess: true
         })
-      ).rejects.toThrow('another Agent Skill scope')
-      await expect(fs.readFile(otherAgentSkillFilePath, 'utf-8')).resolves.toBe(
-        'other agent skill file'
-      )
+      ).resolves.toBeDefined()
+
+      if (toolName === 'write') {
+        await expect(fs.readFile(otherAgentSkillFilePath, 'utf-8')).resolves.toBe('overwritten')
+      } else if (toolName === 'edit') {
+        await expect(fs.readFile(otherAgentSkillFilePath, 'utf-8')).resolves.toBe('edited')
+      }
     }
   )
 
@@ -341,21 +344,43 @@ describe('AgentToolManager skill file access', () => {
     )
   })
 
-  it('hard-denies another Agent Skill root as exec cwd in full access mode', async () => {
+  it('allows another Agent Skill root as exec cwd in full access mode', async () => {
     const manager = buildManager()
     const otherSkillRoot = path.dirname(otherAgentSkillFilePath)
+    vi.spyOn(AgentBashHandler.prototype as never, 'prepareCommand' as never).mockResolvedValue({
+      originalCommand: 'pwd',
+      command: 'pwd',
+      env: { PATH: '/bin' },
+      rewritten: false,
+      rtkApplied: false,
+      rtkMode: 'bypass'
+    })
+    const runShellProcess = vi
+      .spyOn(AgentBashHandler.prototype as never, 'runShellProcess' as never)
+      .mockResolvedValue({
+        kind: 'completed',
+        output: otherSkillRoot,
+        exitCode: 0,
+        timedOut: false,
+        offloaded: false
+      })
 
-    await expect(
-      manager.callTool(
-        'exec',
-        {
-          command: 'pwd',
-          description: 'Print cwd',
-          cwd: otherSkillRoot
-        },
-        'conv1',
-        { allowExternalFileAccess: true }
-      )
-    ).rejects.toThrow('another Agent Skill scope')
+    await manager.callTool(
+      'exec',
+      {
+        command: 'pwd',
+        description: 'Print cwd',
+        cwd: otherSkillRoot
+      },
+      'conv1',
+      { allowExternalFileAccess: true }
+    )
+
+    expect(runShellProcess).toHaveBeenCalledWith(
+      'pwd',
+      otherSkillRoot,
+      120000,
+      expect.objectContaining({ env: { PATH: '/bin' } })
+    )
   })
 })
