@@ -66,6 +66,8 @@
     "selected": "已選擇",
     "rejected": "已拒絕",
     "customPlaceholder": "輸入你的回答...",
-    "answerLabel": "回答"
+    "answerLabel": "回答",
+    "otherCustom": "其他（自訂）"
   }
 }
+

@@ -66,6 +66,8 @@
     "selected": "انتخاب شد",
     "rejected": "رد شد",
     "customPlaceholder": "پاسخ خود را بنویسید...",
-    "answerLabel": "پاسخ"
+    "answerLabel": "پاسخ",
+    "otherCustom": "سایر (سفارشی)"
   }
 }
+

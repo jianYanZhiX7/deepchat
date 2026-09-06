@@ -66,6 +66,8 @@
     "selected": "Wybrane",
     "rejected": "Odrzucony",
     "customPlaceholder": "Wpisz swoją odpowiedź...",
-    "answerLabel": "Odpowiedź"
+    "answerLabel": "Odpowiedź",
+    "otherCustom": "Inna (niestandardowa)"
   }
 }
+

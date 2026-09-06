@@ -8,7 +8,12 @@
       <span
         v-for="option in options"
         :key="option.label"
-        class="inline-flex h-7 items-center rounded-full border bg-muted/30 px-3 text-xs text-muted-foreground"
+        class="inline-flex h-7 items-center rounded-full border px-3 text-xs"
+        :class="
+          isSelectedOption(option)
+            ? 'border-primary bg-muted/30 text-primary'
+            : 'border-border/60 bg-muted/30 text-muted-foreground'
+        "
       >
         {{ option.label }}
       </span>
@@ -58,6 +63,13 @@ const answerText = computed(() => {
   const raw = props.block.extra?.answerText
   return typeof raw === 'string' ? translateMaybeKey(raw) : ''
 })
+
+const selectedOptionLabel = computed(() => answerText.value.trim())
+
+const isSelectedOption = (option: QuestionOption): boolean => {
+  const selected = selectedOptionLabel.value
+  return Boolean(selected) && option.label.trim() === selected
+}
 
 const normalizeOption = (option: unknown): QuestionOption | null => {
   if (!option || typeof option !== 'object') return null

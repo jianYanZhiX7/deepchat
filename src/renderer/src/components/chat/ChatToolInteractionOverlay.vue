@@ -49,6 +49,11 @@
         variant="outline"
         size="sm"
         class="h-auto min-h-8 px-3 py-1.5 text-left"
+        :class="
+          submittedOption === option.label
+            ? 'border-primary text-primary hover:border-primary hover:text-primary'
+            : ''
+        "
         @click="onQuestionOption(option)"
       >
         <span class="flex flex-col items-start gap-0.5">
@@ -66,7 +71,7 @@
         class="h-8 px-3 text-xs"
         @click="onQuestionOther"
       >
-        Other
+        {{ t('components.messageBlockQuestionRequest.otherCustom') }}
       </Button>
     </div>
 
@@ -93,7 +98,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Button } from '@shadcn/components/ui/button'
 import { Icon } from '@iconify/vue'
@@ -118,6 +123,15 @@ const props = defineProps<{
 const emit = defineEmits<{
   respond: [response: ToolInteractionResponse]
 }>()
+
+const submittedOption = ref<string | null>(null)
+
+watch(
+  () => props.interaction,
+  () => {
+    submittedOption.value = null
+  }
+)
 
 const { t } = useI18n()
 
@@ -257,6 +271,7 @@ const onPermission = (granted: boolean) => {
 }
 
 const onQuestionOption = (option: QuestionOptionView) => {
+  submittedOption.value = option.label
   emit('respond', {
     kind: 'question_option',
     optionLabel: isSkillDraft.value ? option.rawLabel : option.label
@@ -280,8 +295,9 @@ const onQuestionOther = () => {
     color-mix(in srgb, white 58%, hsl(var(--background)) 42%) 100%
   );
   box-shadow:
-    0 20px 40px -30px rgb(15 23 42 / 0.2),
-    0 8px 18px -18px rgb(15 23 42 / 0.08),
+    0 26px 64px -14px rgb(2 6 23 / 0.72),
+    0 14px 32px -10px rgb(2 6 23 / 0.5),
+    0 6px 16px -8px rgb(2 6 23 / 0.34),
     inset 0 1px 0 rgb(255 255 255 / 0.42),
     inset 0 -10px 20px -18px rgb(148 163 184 / 0.18);
 }

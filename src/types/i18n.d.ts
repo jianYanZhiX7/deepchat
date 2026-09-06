@@ -1494,6 +1494,7 @@ declare module 'vue-i18n' {
       rejected: string
       customPlaceholder: string
       answerLabel: string
+      otherCustom: string
     }
     translate: {
       title: string

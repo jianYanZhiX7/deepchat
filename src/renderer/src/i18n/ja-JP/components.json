@@ -66,6 +66,8 @@
     "selected": "Selected",
     "rejected": "Rejected",
     "customPlaceholder": "Type your answer...",
-    "answerLabel": "Answer"
+    "answerLabel": "Answer",
+    "otherCustom": "その他（カスタム）"
   }
 }
+

@@ -66,6 +66,8 @@
     "selected": "Dipilih",
     "rejected": "Ditolak",
     "customPlaceholder": "Masukkan jawaban Anda...",
-    "answerLabel": "jawaban"
+    "answerLabel": "jawaban",
+    "otherCustom": "Lainnya (kustom)"
   }
 }
+

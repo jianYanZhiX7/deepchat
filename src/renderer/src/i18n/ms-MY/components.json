@@ -66,6 +66,8 @@
     "selected": "Dipilih",
     "rejected": "ditolak",
     "customPlaceholder": "Masukkan jawapan anda...",
-    "answerLabel": "jawab"
+    "answerLabel": "jawab",
+    "otherCustom": "Lain (tersuai)"
   }
 }
+

@@ -66,6 +66,8 @@
     "selected": "Seçildi",
     "rejected": "Reddedilmiş",
     "customPlaceholder": "Cevabınızı yazın...",
-    "answerLabel": "Cevap"
+    "answerLabel": "Cevap",
+    "otherCustom": "Diğer (özel)"
   }
 }
+

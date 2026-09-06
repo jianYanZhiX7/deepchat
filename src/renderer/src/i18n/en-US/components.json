@@ -66,6 +66,7 @@
     "selected": "Selected",
     "rejected": "Rejected",
     "customPlaceholder": "Type your answer...",
-    "answerLabel": "Answer"
+    "answerLabel": "Answer",
+    "otherCustom": "Other (custom)"
   }
 }

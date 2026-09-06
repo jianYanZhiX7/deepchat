@@ -66,6 +66,8 @@
     "selected": "Selected",
     "rejected": "Rejected",
     "customPlaceholder": "Type your answer...",
-    "answerLabel": "Answer"
+    "answerLabel": "Answer",
+    "otherCustom": "기타 (사용자 지정)"
   }
 }
+

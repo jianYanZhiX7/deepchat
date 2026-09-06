@@ -66,6 +66,8 @@
     "selected": "נבחר",
     "rejected": "נדחה",
     "customPlaceholder": "הקלד את תשובתך...",
-    "answerLabel": "תשובה"
+    "answerLabel": "תשובה",
+    "otherCustom": "אחר (מותאם אישית)"
   }
 }
+

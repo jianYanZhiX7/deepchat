@@ -66,6 +66,8 @@
     "selected": "Đã chọn",
     "rejected": "Bị từ chối",
     "customPlaceholder": "Nhập câu trả lời của bạn...",
-    "answerLabel": "Trả lời"
+    "answerLabel": "Trả lời",
+    "otherCustom": "Khác (tùy chỉnh)"
   }
 }
+
