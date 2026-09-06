@@ -32,7 +32,8 @@ const stores = vi.hoisted(() => ({
     fetchAgents: vi.fn()
   },
   sidepanel: {
-    toggleWorkspace: vi.fn()
+    toggleWorkspace: vi.fn(),
+    autoOpenFlashSeq: 0
   },
   sidebar: {
     collapsed: false

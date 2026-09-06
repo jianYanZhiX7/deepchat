@@ -80,4 +80,25 @@ describe('sidepanel store', () => {
     expect(store.activeTab).toBe('workspace')
     expect(store.mcpAppPreviewOwnerId).toBeNull()
   })
+
+  it('opens workspace via openWorkspaceAuto and bumps the flash sequence', async () => {
+    const { store } = await setupSidepanelStore(1200)
+
+    const initialSeq = store.autoOpenFlashSeq
+    store.openWorkspaceAuto('session-a')
+
+    expect(store.open).toBe(true)
+    expect(store.activeTab).toBe('workspace')
+    expect(store.autoOpenFlashSeq).toBe(initialSeq + 1)
+  })
+
+  it('does not bump the flash sequence on plain openWorkspace', async () => {
+    const { store } = await setupSidepanelStore(1200)
+
+    const initialSeq = store.autoOpenFlashSeq
+    store.openWorkspace('session-a')
+
+    expect(store.open).toBe(true)
+    expect(store.autoOpenFlashSeq).toBe(initialSeq)
+  })
 })

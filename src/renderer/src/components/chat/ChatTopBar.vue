@@ -108,7 +108,8 @@
       <Button
         variant="ghost"
         size="icon"
-        class="h-7 w-7 text-muted-foreground hover:text-foreground"
+        class="h-7 w-7 text-blue-500 hover:text-blue-600"
+        :class="{ 'workspace-auto-flash': workspaceAutoFlash }"
         :title="t('chat.workspace.title')"
         @click="sidepanelStore.toggleWorkspace(props.sessionId)"
       >
@@ -302,6 +303,8 @@ const moveDialogBusy = ref(false)
 const moveDialogError = ref<string | null>(null)
 const renameValue = ref('')
 const renameInputRef = ref<HTMLInputElement | null>(null)
+const workspaceAutoFlash = ref(false)
+let workspaceFlashTimer: ReturnType<typeof setTimeout> | undefined
 
 const showCollapsedNewChatButton = computed(
   () => sidebarStore.collapsed && Boolean(sessionStore.newConversationTargetAgentId)
@@ -475,6 +478,20 @@ watch(
     if (readOnly) {
       resetRenameState()
     }
+  }
+)
+
+watch(
+  () => sidepanelStore.autoOpenFlashSeq,
+  () => {
+    if (workspaceFlashTimer !== undefined) {
+      clearTimeout(workspaceFlashTimer)
+    }
+    workspaceAutoFlash.value = true
+    workspaceFlashTimer = setTimeout(() => {
+      workspaceAutoFlash.value = false
+      workspaceFlashTimer = undefined
+    }, 1000)
   }
 )
 
@@ -664,5 +681,36 @@ const handleBackToParent = async () => {
 
 button {
   -webkit-app-region: no-drag;
+}
+
+.workspace-auto-flash {
+  animation: workspace-auto-flash 0.9s ease-in-out 1;
+}
+
+@keyframes workspace-auto-flash {
+  0%,
+  14% {
+    opacity: 1;
+  }
+  26% {
+    opacity: 0;
+  }
+  38%,
+  52% {
+    opacity: 1;
+  }
+  64% {
+    opacity: 0;
+  }
+  76%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-auto-flash {
+    animation: none;
+  }
 }
 </style>

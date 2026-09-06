@@ -50,6 +50,7 @@ export const useSidepanelStore = defineStore('sidepanel', () => {
   const open = ref(false)
   const activeTab = ref<SidePanelTab>('workspace')
   const mcpAppPreviewOwnerId = ref<string | null>(null)
+  const autoOpenFlashSeq = ref(0)
   const width = useStorage('chat-sidepanel-width', 520)
   const sessionStates = reactive<Record<string, WorkspaceSessionState>>({})
 
@@ -118,6 +119,11 @@ export const useSidepanelStore = defineStore('sidepanel', () => {
     }
     open.value = true
     activeTab.value = 'workspace'
+  }
+
+  const openWorkspaceAuto = (sessionId?: string | null) => {
+    openWorkspace(sessionId)
+    autoOpenFlashSeq.value += 1
   }
 
   const openBrowser = () => {
@@ -244,6 +250,7 @@ export const useSidepanelStore = defineStore('sidepanel', () => {
     open,
     activeTab,
     mcpAppPreviewOwnerId,
+    autoOpenFlashSeq,
     width: normalizedWidth,
     navCollapsed,
     navWidth,
@@ -255,6 +262,7 @@ export const useSidepanelStore = defineStore('sidepanel', () => {
     getSessionState,
     setWidth,
     openWorkspace,
+    openWorkspaceAuto,
     openBrowser,
     openMcpAppPreview,
     closeMcpAppPreview,

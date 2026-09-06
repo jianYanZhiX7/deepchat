@@ -55,7 +55,7 @@ export function useWorkspaceAutoOpen(options: UseWorkspaceAutoOpenOptions) {
     flashCreatedFiles(payload.createdPaths)
 
     if (!sidepanelStore.open) {
-      sidepanelStore.openWorkspace(sessionId)
+      sidepanelStore.openWorkspaceAuto(sessionId)
       sidepanelStore.ensureSessionState(sessionId).sections.files = true
     }
   }
