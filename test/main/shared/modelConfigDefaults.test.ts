@@ -7,12 +7,12 @@ import {
 } from '../../../src/shared/modelConfigDefaults'
 
 describe('resolveDerivedModelMaxTokens', () => {
-  it('caps large derived values at 32000', () => {
-    expect(resolveDerivedModelMaxTokens(64000)).toBe(32000)
+  it('caps large derived values at 100000', () => {
+    expect(resolveDerivedModelMaxTokens(200000)).toBe(100000)
   })
 
   it('keeps exact cap values', () => {
-    expect(resolveDerivedModelMaxTokens(32000)).toBe(32000)
+    expect(resolveDerivedModelMaxTokens(100000)).toBe(100000)
   })
 
   it('keeps values below the cap', () => {
@@ -42,6 +42,6 @@ describe('resolveModelMaxTokens', () => {
   })
 
   it('exports the shared derived cap constant', () => {
-    expect(DERIVED_MODEL_MAX_TOKENS_CAP).toBe(32000)
+    expect(DERIVED_MODEL_MAX_TOKENS_CAP).toBe(100000)
   })
 })

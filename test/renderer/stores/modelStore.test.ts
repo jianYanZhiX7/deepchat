@@ -580,7 +580,7 @@ describe('modelStore.refreshProviderModels', () => {
           expect.objectContaining({
             id: 'gpt-sparse',
             contextLength: 16000,
-            maxTokens: 4096,
+            maxTokens: 100000,
             vision: false,
             functionCall: true
           })
@@ -594,7 +594,7 @@ describe('modelStore.refreshProviderModels', () => {
           expect.objectContaining({
             id: 'gpt-sparse',
             contextLength: 16000,
-            maxTokens: 4096,
+            maxTokens: 100000,
             vision: false,
             functionCall: true
           })
@@ -795,7 +795,7 @@ describe('modelStore.refreshProviderModels', () => {
     ])
   })
 
-  it('caps derived maxTokens for merged standard models', async () => {
+  it('uses stored-derived maxTokens for merged standard models', async () => {
     const dbModel = {
       id: 'gpt-5.4',
       name: 'GPT-5.4',
@@ -833,7 +833,7 @@ describe('modelStore.refreshProviderModels', () => {
         models: [
           expect.objectContaining({
             id: 'gpt-5.4',
-            maxTokens: 32000
+            maxTokens: 64000
           })
         ]
       }
@@ -901,7 +901,7 @@ describe('modelStore.refreshProviderModels', () => {
         models: [
           expect.objectContaining({
             id: 'custom-chat',
-            maxTokens: 32000
+            maxTokens: 100000
           })
         ]
       }

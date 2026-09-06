@@ -119,14 +119,14 @@ describe('ModelConfigHelper', () => {
       // DELETE: Reset configuration
       modelConfigHelper.resetModelConfig(testModelId, testProviderId)
       expect(modelConfigHelper.hasUserConfig(testModelId, testProviderId)).toBe(false)
-      expect(modelConfigHelper.getModelConfig(testModelId, testProviderId).maxTokens).toBe(4096) // Default
+      expect(modelConfigHelper.getModelConfig(testModelId, testProviderId).maxTokens).toBe(100000) // Default
     })
 
     it('should return safe default configuration for unknown models', () => {
       const defaultConfig = modelConfigHelper.getModelConfig('unknown-model', 'unknown-provider')
 
       expect(defaultConfig).toMatchObject({
-        maxTokens: 4096,
+        maxTokens: 100000,
         contextLength: 16000,
         timeout: DEFAULT_MODEL_TIMEOUT,
         temperature: 0.6,
@@ -145,7 +145,7 @@ describe('ModelConfigHelper', () => {
         providerId: 'anthropic',
         providerApiType: 'anthropic',
         contextLength: 200_000,
-        maxTokens: 32_000
+        maxTokens: 64_000
       },
       {
         label: 'AWS Bedrock',
@@ -153,7 +153,7 @@ describe('ModelConfigHelper', () => {
         providerId: 'aws-bedrock',
         providerApiType: 'aws-bedrock',
         contextLength: 200_000,
-        maxTokens: 32_000
+        maxTokens: 64_000
       },
       {
         label: 'ACP',
@@ -195,7 +195,7 @@ describe('ModelConfigHelper', () => {
         )
       ).toMatchObject({
         contextLength: 200_000,
-        maxTokens: 32_000,
+        maxTokens: 64_000,
         isUserDefined: false
       })
     })
@@ -433,7 +433,7 @@ describe('ModelConfigHelper', () => {
       { label: 'missing provider IDs', modelId: 'test-model', providerId: undefined }
     ])('returns safe defaults for $label', ({ modelId, providerId }) => {
       expect(modelConfigHelper.getModelConfig(modelId, providerId)).toMatchObject({
-        maxTokens: 4096,
+        maxTokens: 100000,
         contextLength: 16000,
         temperature: 0.6,
         vision: false,

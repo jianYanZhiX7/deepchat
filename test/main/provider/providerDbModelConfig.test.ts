@@ -100,7 +100,7 @@ describe('Provider DB strict matching and user overrides', () => {
             },
             {
               id: 'partial-limit',
-              limit: { context: 16000 }, // output missing -> fallback 4096
+              limit: { context: 16000 }, // output missing -> fallback 100000
               modalities: { input: ['text'] }
             },
             {
@@ -109,7 +109,12 @@ describe('Provider DB strict matching and user overrides', () => {
               modalities: { input: ['text'] }
             },
             {
-              id: 'no-limit' // both missing -> fallback 16000/4096
+              id: 'huge-output',
+              limit: { context: 200000, output: 200000 },
+              modalities: { input: ['text'] }
+            },
+            {
+              id: 'no-limit' // both missing -> fallback 200000/100000
             },
             {
               id: 'tool-call-disabled',
@@ -302,7 +307,7 @@ describe('Provider DB strict matching and user overrides', () => {
 
     expect(config).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000,
+      maxTokens: 100_000,
       reasoning: true
     })
   })
@@ -311,33 +316,41 @@ describe('Provider DB strict matching and user overrides', () => {
     const helper = new ModelConfigHelper()
     const cfg1 = helper.getModelConfig('partial-limit', 'test-provider')
     expect(cfg1.contextLength).toBe(16000)
-    expect(cfg1.maxTokens).toBe(4096)
+    expect(cfg1.maxTokens).toBe(100000)
     expect(cfg1.enableSearch).toBe(false)
     expect(cfg1.forcedSearch).toBe(false)
     expect(cfg1.searchStrategy).toBe('turbo')
 
     const cfg2 = helper.getModelConfig('no-limit', 'test-provider')
     expect(cfg2.contextLength).toBe(16000)
-    expect(cfg2.maxTokens).toBe(4096)
+    expect(cfg2.maxTokens).toBe(100000)
     expect(cfg2.functionCall).toBe(true)
     expect(cfg2.enableSearch).toBe(false)
     expect(cfg2.forcedSearch).toBe(false)
     expect(cfg2.searchStrategy).toBe('turbo')
   })
 
-  it('caps provider-derived maxTokens defaults at 32000', () => {
+  it('caps provider-derived maxTokens defaults at 100000', () => {
+    const helper = new ModelConfigHelper()
+    const cfg = helper.getModelConfig('huge-output', 'test-provider')
+
+    expect(cfg.contextLength).toBe(200000)
+    expect(cfg.maxTokens).toBe(100000)
+  })
+
+  it('keeps provider-derived maxTokens at the advertised limit below the global cap', () => {
     const helper = new ModelConfigHelper()
     const cfg = helper.getModelConfig('large-output', 'test-provider')
 
     expect(cfg.contextLength).toBe(200000)
-    expect(cfg.maxTokens).toBe(32000)
+    expect(cfg.maxTokens).toBe(64000)
   })
 
   it('preserves explicit tool_call=false from provider DB', () => {
     const helper = new ModelConfigHelper()
     const cfg = helper.getModelConfig('tool-call-disabled', 'test-provider')
     expect(cfg.contextLength).toBe(16000)
-    expect(cfg.maxTokens).toBe(4096)
+    expect(cfg.maxTokens).toBe(100000)
     expect(cfg.functionCall).toBe(false)
   })
 
@@ -345,7 +358,7 @@ describe('Provider DB strict matching and user overrides', () => {
     const helper = new ModelConfigHelper()
     const cfg = helper.getModelConfig('test-model')
     expect(cfg.contextLength).toBe(16000)
-    expect(cfg.maxTokens).toBe(4096)
+    expect(cfg.maxTokens).toBe(100000)
     expect(cfg.functionCall).toBe(true)
     expect(cfg.temperature).toBe(0.6)
   })
@@ -365,7 +378,7 @@ describe('Provider DB strict matching and user overrides', () => {
       reasoningEffort: directConfig.reasoningEffort
     })
     expect(proxyConfig.contextLength).toBe(1048576)
-    expect(proxyConfig.maxTokens).toBe(32000)
+    expect(proxyConfig.maxTokens).toBe(100000)
     expect(proxyConfig.vision).toBe(true)
     expect(proxyConfig.functionCall).toBe(true)
     expect(proxyConfig.reasoning).toBe(true)
@@ -431,7 +444,7 @@ describe('Provider DB strict matching and user overrides', () => {
     const config = helper.getModelConfig('kimi-k3', 'new-api', 'capability-team')
 
     expect(config.contextLength).toBe(16000)
-    expect(config.maxTokens).toBe(4096)
+    expect(config.maxTokens).toBe(100000)
     expect(config.reasoning).toBe(false)
     expect(config.reasoningEffort).toBeUndefined()
   })
@@ -442,7 +455,7 @@ describe('Provider DB strict matching and user overrides', () => {
     const cfg = helper.getModelConfig('shared-model', 'new-api')
 
     expect(cfg.contextLength).toBe(16000)
-    expect(cfg.maxTokens).toBe(4096)
+    expect(cfg.maxTokens).toBe(100000)
   })
 
   it('keeps New API catalog defaults stable across reset, refresh, and restart', () => {
@@ -474,27 +487,27 @@ describe('Provider DB strict matching and user overrides', () => {
 
     expect(resolveConfig(helper)).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000,
+      maxTokens: 100_000,
       isUserDefined: false
     })
 
     helper.resetModelConfig(modelId, providerId)
     expect(resolveConfig(helper)).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000
+      maxTokens: 100_000
     })
 
     expect(
       resolveConfig(helper, { ...providerFacts, name: 'GPT-5.6 Sol (refreshed)' })
     ).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000
+      maxTokens: 100_000
     })
 
     const restartedHelper = new ModelConfigHelper()
     expect(resolveConfig(restartedHelper)).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000
+      maxTokens: 100_000
     })
 
     restartedHelper.setModelConfig(modelId, providerId, {
@@ -506,7 +519,7 @@ describe('Provider DB strict matching and user overrides', () => {
     restartedHelper.resetModelConfig(modelId, providerId)
     expect(resolveConfig(restartedHelper)).toMatchObject({
       contextLength: 1_050_000,
-      maxTokens: 32_000,
+      maxTokens: 100_000,
       isUserDefined: false
     })
   })
@@ -615,7 +628,7 @@ describe('Provider DB strict matching and user overrides', () => {
     )
 
     const providerRead = helper.getModelConfig('large-output', 'test-provider')
-    expect(providerRead.maxTokens).toBe(32000)
+    expect(providerRead.maxTokens).toBe(64000)
     expect(providerRead.contextLength).toBe(200000)
 
     helper.setModelConfig('large-output', 'test-provider', {
@@ -647,7 +660,7 @@ describe('Provider DB strict matching and user overrides', () => {
     const cfg = helper.getModelConfig('minimax-m2.5', 'minimax')
 
     expect(cfg.contextLength).toBe(204800)
-    expect(cfg.maxTokens).toBe(32000)
+    expect(cfg.maxTokens).toBe(100000)
     expect(cfg.functionCall).toBe(true)
     expect(cfg.reasoning).toBe(true)
   })
@@ -658,7 +671,7 @@ describe('Provider DB strict matching and user overrides', () => {
     const cfg = helper.getModelConfig('minimax-m3', 'minimax')
 
     expect(cfg.contextLength).toBe(1_000_000)
-    expect(cfg.maxTokens).toBe(32000)
+    expect(cfg.maxTokens).toBe(100000)
     expect(cfg.vision).toBe(true)
     expect(cfg.functionCall).toBe(true)
     expect(cfg.reasoning).toBe(true)
