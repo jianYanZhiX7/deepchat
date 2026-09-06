@@ -2148,6 +2148,7 @@ declare module 'vue-i18n' {
       searchPreview: string
       launchAtLoginEnabled: string
       autoScrollEnabled: string
+      autoOpenWorkspaceOnNewFile: string
       privacyMode: string
       privacyModeDescription: string
       privacyModeAutoUpdate: string

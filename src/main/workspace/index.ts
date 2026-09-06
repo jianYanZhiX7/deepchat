@@ -71,6 +71,8 @@ const WATCH_IGNORED_DIRS = [
 
 const WATCH_DEBOUNCE_MS = 120
 
+const MAX_TRACKED_CREATED_PATHS = 20
+
 type WorkspaceWatchRuntime = {
   workspacePath: string
   refCount: number
@@ -80,6 +82,7 @@ type WorkspaceWatchRuntime = {
   debounceTimer: NodeJS.Timeout | null
   pendingKind: WorkspaceInvalidationKind | null
   pendingSource: WorkspaceInvalidationSource | null
+  pendingCreatedPaths: Set<string>
   disposed: boolean
 }
 
@@ -153,6 +156,7 @@ export class WorkspaceService implements WorkspaceServicePort {
       debounceTimer: null,
       pendingKind: null,
       pendingSource: null,
+      pendingCreatedPaths: new Set<string>(),
       disposed: false
     }
 
@@ -223,6 +227,7 @@ export class WorkspaceService implements WorkspaceServicePort {
 
     const source = this.getInvalidationSourceForBatch(batch)
     let shouldInvalidateFs = false
+    const candidatePaths: string[] = []
 
     for (const event of batch.events) {
       if (event.type === 'overflow' || event.type === 'root-deleted') {
@@ -232,7 +237,7 @@ export class WorkspaceService implements WorkspaceServicePort {
             error
           })
         })
-        this.scheduleInvalidation(runtime, 'full', source)
+        this.scheduleInvalidation(runtime, 'full', source, [])
         return
       }
 
@@ -247,16 +252,39 @@ export class WorkspaceService implements WorkspaceServicePort {
             error
           })
         })
-        this.scheduleInvalidation(runtime, 'full', source)
+        this.scheduleInvalidation(runtime, 'full', source, [])
         return
+      }
+
+      if (event.type === 'create' && candidatePaths.length < MAX_TRACKED_CREATED_PATHS) {
+        candidatePaths.push(event.path)
       }
 
       shouldInvalidateFs = true
     }
 
     if (shouldInvalidateFs) {
-      this.scheduleInvalidation(runtime, 'fs', source)
+      void this.resolveExistingFilePaths(candidatePaths).then((createdPaths) => {
+        this.scheduleInvalidation(runtime, 'fs', source, createdPaths)
+      })
     }
+  }
+
+  private async resolveExistingFilePaths(paths: string[]): Promise<string[]> {
+    if (paths.length === 0) {
+      return []
+    }
+
+    const checks = await Promise.all(
+      paths.map(async (targetPath) => {
+        try {
+          return (await fs.promises.stat(targetPath)).isFile() ? targetPath : null
+        } catch {
+          return null
+        }
+      })
+    )
+    return checks.filter((targetPath): targetPath is string => targetPath !== null)
   }
 
   private createContentWatchExcludes(workspacePath: string): string[] {
@@ -293,10 +321,18 @@ export class WorkspaceService implements WorkspaceServicePort {
   private scheduleInvalidation(
     runtime: WorkspaceWatchRuntime,
     kind: WorkspaceInvalidationKind,
-    source: WorkspaceInvalidationSource
+    source: WorkspaceInvalidationSource,
+    createdPaths: string[]
   ): void {
     if (runtime.disposed) {
       return
+    }
+
+    for (const createdPath of createdPaths) {
+      if (runtime.pendingCreatedPaths.size >= MAX_TRACKED_CREATED_PATHS) {
+        break
+      }
+      runtime.pendingCreatedPaths.add(createdPath)
     }
 
     if (
@@ -323,10 +359,12 @@ export class WorkspaceService implements WorkspaceServicePort {
         workspacePath: runtime.workspacePath,
         kind: runtime.pendingKind ?? kind,
         source: runtime.pendingSource ?? source,
-        version: Date.now()
+        version: Date.now(),
+        createdPaths: Array.from(runtime.pendingCreatedPaths)
       }
       runtime.pendingKind = null
       runtime.pendingSource = null
+      runtime.pendingCreatedPaths.clear()
       this.emitInvalidation(payload)
     }, WATCH_DEBOUNCE_MS)
   }
@@ -401,7 +439,7 @@ export class WorkspaceService implements WorkspaceServicePort {
         )
           ? 'full'
           : 'git'
-        this.scheduleInvalidation(runtime, kind, source)
+        this.scheduleInvalidation(runtime, kind, source, [])
       },
       (status) => this.emitWatchStatus(runtime.workspacePath, status)
     )

@@ -7,6 +7,7 @@ export const SETTINGS_KEYS = [
   'codeFontFamily',
   'artifactsEffectEnabled',
   'autoScrollEnabled',
+  'autoOpenWorkspaceOnNewFile',
   'autoCompactionEnabled',
   'autoCompactionTriggerThreshold',
   'autoCompactionRetainRecentPairs',
@@ -29,6 +30,7 @@ export const SettingsSnapshotValuesSchema = z.object({
   codeFontFamily: z.string(),
   artifactsEffectEnabled: z.boolean(),
   autoScrollEnabled: z.boolean(),
+  autoOpenWorkspaceOnNewFile: z.boolean(),
   autoCompactionEnabled: z.boolean(),
   autoCompactionTriggerThreshold: z.number().int(),
   autoCompactionRetainRecentPairs: z.number().int(),
@@ -62,6 +64,10 @@ export const SettingsChangeSchema = z.discriminatedUnion('key', [
   }),
   z.object({
     key: z.literal('autoScrollEnabled'),
+    value: z.boolean()
+  }),
+  z.object({
+    key: z.literal('autoOpenWorkspaceOnNewFile'),
     value: z.boolean()
   }),
   z.object({

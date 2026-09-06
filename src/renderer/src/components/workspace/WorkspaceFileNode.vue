@@ -3,7 +3,8 @@
     <ContextMenu>
       <ContextMenuTrigger as-child>
         <button
-          class="flex w-full cursor-grab items-center gap-1.5 px-4 py-1 text-left text-xs transition hover:bg-muted/40 active:cursor-grabbing"
+          class="flex w-full cursor-grab items-center gap-1.5 px-4 py-1 text-left text-xs transition active:cursor-grabbing"
+          :class="isFlashing ? 'bg-primary/15' : 'hover:bg-muted/40'"
           :style="{ paddingLeft: `${16 + depth * 12}px` }"
           type="button"
           draggable="true"
@@ -66,6 +67,7 @@ import { Icon } from '@iconify/vue'
 import { useI18n } from 'vue-i18n'
 import { createWorkspaceClient } from '@api/WorkspaceClient'
 import { setChatInputWorkspaceItemDragData } from '@/lib/chatInputWorkspaceReference'
+import { isFileFlashing } from '@/lib/workspaceFileFlash'
 import {
   ContextMenu,
   ContextMenuContent,
@@ -88,6 +90,10 @@ const emit = defineEmits<{
 
 const { t } = useI18n()
 const workspaceClient = createWorkspaceClient()
+
+const isFlashing = computed(() => {
+  return !props.node.isDirectory && isFileFlashing(props.node.path)
+})
 
 const extensionIconMap: Record<string, string> = {
   pdf: 'lucide:file-text',

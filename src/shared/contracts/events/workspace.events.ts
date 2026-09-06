@@ -14,7 +14,8 @@ export const workspaceInvalidatedEvent = defineEventContract({
     workspacePath: z.string(),
     kind: WorkspaceInvalidationKindSchema,
     source: WorkspaceInvalidationSourceSchema,
-    version: TimestampMsSchema
+    version: TimestampMsSchema,
+    createdPaths: z.array(z.string())
   })
 })
 

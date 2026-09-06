@@ -10,6 +10,7 @@
     "searchPreview": "Pratonton carian",
     "launchAtLoginEnabled": "Lancarkan DeepChat semasa but",
     "autoScrollEnabled": "Tatal secara automatik apabila dijana",
+    "autoOpenWorkspaceOnNewFile": "Buka ruang kerja secara automatik apabila fail baharu dicipta",
     "privacyMode": "mod privasi",
     "privacyModeDescription": "Selepas mengaktifkan mod privasi, DeepChat tidak akan memulakan permintaan berikut secara automatik:",
     "privacyModeAutoUpdate": "Semakan kemas kini apl",

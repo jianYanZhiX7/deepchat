@@ -10,6 +10,7 @@
     "searchPreview": "Arama Önizlemesi",
     "launchAtLoginEnabled": "Giriş sırasında DeepChat'ı başlatın",
     "autoScrollEnabled": "Oluştururken otomatik kaydırma",
+    "autoOpenWorkspaceOnNewFile": "Yeni dosya oluşturulduğunda çalışma alanını otomatik aç",
     "privacyMode": "Gizlilik Modu",
     "privacyModeDescription": "DeepChat'a ait otomatik giden istekleri durdurun:",
     "privacyModeAutoUpdate": "Uygulama güncelleme kontrolleri",

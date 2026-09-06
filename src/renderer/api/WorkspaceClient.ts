@@ -105,6 +105,7 @@ export function createWorkspaceClient(bridge: DeepchatBridge = getDeepchatBridge
       kind: 'fs' | 'git' | 'full'
       source: 'watcher' | 'fallback' | 'lifecycle'
       version: number
+      createdPaths: string[]
     }) => void
   ) {
     return bridge.on(workspaceInvalidatedEvent.name, listener)

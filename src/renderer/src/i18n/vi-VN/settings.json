@@ -10,6 +10,7 @@
     "searchPreview": "Xem trước tìm kiếm",
     "launchAtLoginEnabled": "Bắt đầu DeepChat khi đăng nhập",
     "autoScrollEnabled": "Tự động cuộn trong khi tạo",
+    "autoOpenWorkspaceOnNewFile": "Tự động mở không gian làm việc khi tạo tệp mới",
     "privacyMode": "Chế độ riêng tư",
     "privacyModeDescription": "Dừng các yêu cầu gửi đi tự động thuộc sở hữu của DeepChat:",
     "privacyModeAutoUpdate": "Kiểm tra cập nhật ứng dụng",

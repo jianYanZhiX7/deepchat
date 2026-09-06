@@ -27,6 +27,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
   const isLoadingFonts = ref(false)
   const artifactsEffectEnabled = ref(false)
   const autoScrollEnabled = ref(true)
+  const autoOpenWorkspaceOnNewFile = ref(true)
   const contentProtectionEnabled = ref(false)
   const privacyModeEnabled = ref(false)
   const copyWithCotEnabled = ref(true)
@@ -70,6 +71,10 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
 
     if (typeof values.autoScrollEnabled === 'boolean') {
       autoScrollEnabled.value = values.autoScrollEnabled
+    }
+
+    if (typeof values.autoOpenWorkspaceOnNewFile === 'boolean') {
+      autoOpenWorkspaceOnNewFile.value = values.autoOpenWorkspaceOnNewFile
     }
 
     if (typeof values.autoCompactionEnabled === 'boolean') {
@@ -215,6 +220,18 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     await updateSettings([
       {
         key: 'autoScrollEnabled',
+        value: nextValue
+      }
+    ])
+  }
+
+  const setAutoOpenWorkspaceOnNewFile = async (enabled: boolean) => {
+    const nextValue = Boolean(enabled)
+    autoOpenWorkspaceOnNewFile.value = nextValue
+
+    await updateSettings([
+      {
+        key: 'autoOpenWorkspaceOnNewFile',
         value: nextValue
       }
     ])
@@ -392,6 +409,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     formattedCodeFontFamily,
     artifactsEffectEnabled,
     autoScrollEnabled,
+    autoOpenWorkspaceOnNewFile,
     autoCompactionEnabled,
     autoCompactionTriggerThreshold,
     autoCompactionRetainRecentPairs,
@@ -408,6 +426,7 @@ export const useUiSettingsStore = defineStore('uiSettings', () => {
     resetFontSettings,
     fetchSystemFonts,
     setAutoScrollEnabled,
+    setAutoOpenWorkspaceOnNewFile,
     setAutoCompactionEnabled,
     setAutoCompactionTriggerThreshold,
     setAutoCompactionRetainRecentPairs,

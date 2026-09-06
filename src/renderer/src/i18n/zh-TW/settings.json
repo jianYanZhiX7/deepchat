@@ -10,6 +10,7 @@
     "searchPreview": "搜尋預覽",
     "launchAtLoginEnabled": "開機時啟動 DeepChat",
     "autoScrollEnabled": "生成時自動捲動",
+    "autoOpenWorkspaceOnNewFile": "建立新檔案時自動開啟工作區",
     "privacyMode": "隱私模式",
     "privacyModeDescription": "啟動隱私模式後，DeepChat 將不會自動發起如下請求：",
     "privacyModeAutoUpdate": "應用程式更新檢查",

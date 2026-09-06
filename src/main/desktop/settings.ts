@@ -100,6 +100,20 @@ export class DesktopSettings {
     return this.settings.get<boolean>('autoScrollEnabled') ?? true
   }
 
+  getAutoOpenWorkspaceOnNewFile(): boolean {
+    return this.settings.get<boolean>('autoOpenWorkspaceOnNewFile') ?? true
+  }
+
+  setAutoOpenWorkspaceOnNewFile(enabled: boolean): void {
+    const value = Boolean(enabled)
+    this.settings.set('autoOpenWorkspaceOnNewFile', value)
+    this.publishEvent('settings.changed', {
+      changedKeys: ['autoOpenWorkspaceOnNewFile'],
+      version: Date.now(),
+      values: { autoOpenWorkspaceOnNewFile: value }
+    })
+  }
+
   getCopyWithCotEnabled(): boolean {
     return this.settings.get<boolean>('copyWithCotEnabled') ?? true
   }

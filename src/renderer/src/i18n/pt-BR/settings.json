@@ -10,6 +10,7 @@
     "searchPreview": "Pré-visualização de Busca",
     "launchAtLoginEnabled": "Iniciar o DeepChat ao entrar no sistema",
     "autoScrollEnabled": "Rolagem automática durante a geração",
+    "autoOpenWorkspaceOnNewFile": "Abrir automaticamente o espaço de trabalho ao criar um novo arquivo",
     "privacyMode": "Modo de Privacidade",
     "privacyModeDescription": "Interrompe as solicitações automáticas de saída feitas pelo DeepChat:",
     "privacyModeAutoUpdate": "Verificação de atualizações do aplicativo",

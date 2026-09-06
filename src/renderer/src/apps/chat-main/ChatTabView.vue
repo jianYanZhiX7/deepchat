@@ -45,10 +45,11 @@
 </template>
 
 <script setup lang="ts">
-import { inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, inject, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { createStartupClient } from '@api/StartupClient'
 import type { RendererStartupWorkloadTaskId } from '@shared/contracts/routes'
 import ChatSidePanel from '@/components/sidepanel/ChatSidePanel.vue'
+import { useWorkspaceAutoOpen } from '@/components/sidepanel/composables/useWorkspaceAutoOpen'
 import AgentBrowserPiP from '@/components/browser/AgentBrowserPiP.vue'
 import AgentComputerUsePiP from '@/components/computerUse/AgentComputerUsePiP.vue'
 import NewThreadPage from '@/pages/NewThreadPage.vue'
@@ -87,6 +88,21 @@ try {
 }
 const isReady = ref(false)
 let cancelDeferredHydration: (() => void) | null = null
+
+const autoOpenSession = computed(() => {
+  if (pageRouter.currentRoute !== 'chat' || !pageRouter.chatSessionId) {
+    return null
+  }
+  if (sessionStore.activeSessionId !== pageRouter.chatSessionId) {
+    return null
+  }
+  return sessionStore.activeSession ?? null
+})
+
+useWorkspaceAutoOpen({
+  sessionId: computed(() => autoOpenSession.value?.id ?? null),
+  workspacePath: computed(() => autoOpenSession.value?.projectDir ?? null)
+})
 
 function isRendererStartupWorkloadTaskId(taskId: string): taskId is RendererStartupWorkloadTaskId {
   return (

@@ -10,6 +10,7 @@
     "searchPreview": "Suchvorschau",
     "launchAtLoginEnabled": "DeepChat beim Anmelden starten",
     "autoScrollEnabled": "Beim Generieren automatisch scrollen",
+    "autoOpenWorkspaceOnNewFile": "Arbeitsbereich automatisch öffnen, wenn eine neue Datei erstellt wird",
     "privacyMode": "Privatsphärenmodus",
     "privacyModeDescription": "Nach dem Aktivieren des Privatsphärenmodus startet DeepChat die folgenden Anfragen nicht automatisch:",
     "privacyModeAutoUpdate": "Updateprüfung der App",

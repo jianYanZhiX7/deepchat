@@ -22,6 +22,13 @@
         @update:model-value="handleAutoScrollChange"
       />
       <SettingToggleRow
+        id="auto-open-workspace-on-new-file-switch"
+        icon="lucide:folder-tree"
+        :label="t('settings.common.autoOpenWorkspaceOnNewFile')"
+        :model-value="autoOpenWorkspaceOnNewFile"
+        @update:model-value="handleAutoOpenWorkspaceOnNewFileChange"
+      />
+      <SettingToggleRow
         id="copy-with-cot-switch"
         icon="lucide:file-text"
         :label="t('settings.common.copyWithCotEnabled')"
@@ -54,12 +61,17 @@ const { t } = useI18n()
 const uiSettingsStore = useUiSettingsStore()
 
 const autoScrollEnabled = computed(() => uiSettingsStore.autoScrollEnabled)
+const autoOpenWorkspaceOnNewFile = computed(() => uiSettingsStore.autoOpenWorkspaceOnNewFile)
 const copyWithCotEnabled = computed(() => uiSettingsStore.copyWithCotEnabled)
 const traceDebugEnabled = computed(() => uiSettingsStore.traceDebugEnabled)
 const launchAtLoginEnabled = computed(() => uiSettingsStore.launchAtLoginEnabled)
 
 const handleAutoScrollChange = (value: boolean) => {
   uiSettingsStore.setAutoScrollEnabled(value)
+}
+
+const handleAutoOpenWorkspaceOnNewFileChange = (value: boolean) => {
+  uiSettingsStore.setAutoOpenWorkspaceOnNewFile(value)
 }
 
 const handleLaunchAtLoginChange = (value: boolean) => {

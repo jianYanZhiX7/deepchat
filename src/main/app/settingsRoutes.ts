@@ -66,6 +66,7 @@ export function createAppSettingsRoutes(deps: {
     codeFontFamily: deps.fonts.getCodeFontFamily(),
     artifactsEffectEnabled: deps.desktopSettings.getArtifactsEffectEnabled(),
     autoScrollEnabled: deps.desktopSettings.getAutoScrollEnabled(),
+    autoOpenWorkspaceOnNewFile: deps.desktopSettings.getAutoOpenWorkspaceOnNewFile(),
     autoCompactionEnabled: deps.agentDefaults.getAutoCompactionEnabled(),
     autoCompactionTriggerThreshold: deps.agentDefaults.getAutoCompactionTriggerThreshold(),
     autoCompactionRetainRecentPairs: deps.agentDefaults.getAutoCompactionRetainRecentPairs(),
@@ -105,6 +106,9 @@ export function createAppSettingsRoutes(deps: {
         return
       case 'autoScrollEnabled':
         deps.desktopSettings.setAutoScrollEnabled(change.value)
+        return
+      case 'autoOpenWorkspaceOnNewFile':
+        deps.desktopSettings.setAutoOpenWorkspaceOnNewFile(change.value)
         return
       case 'autoCompactionEnabled':
         deps.agentDefaults.setAutoCompactionEnabled(change.value)

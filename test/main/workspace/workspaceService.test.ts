@@ -150,6 +150,18 @@ function createWorkspaceService(
   })
 }
 
+async function waitForInvalidationEvents(expectedCount: number, maxSteps = 8): Promise<void> {
+  for (let step = 0; step < maxSteps; step += 1) {
+    const typedCalls = sendToAllWindowsMock.mock.calls.filter(
+      ([channel]) => channel === DEEPCHAT_EVENT_CHANNEL
+    )
+    if (typedCalls.length >= expectedCount) {
+      return
+    }
+    await vi.advanceTimersByTimeAsync(120)
+  }
+}
+
 beforeEach(() => {
   resetWorkspacePreviewProtocolState()
 })
@@ -232,15 +244,17 @@ describe('WorkspaceService watchers', () => {
     await presenter.watchWorkspace(workspacePath)
 
     const [contentWatcher] = fakeWatcherService.watchers
+    const createdPath = path.join(workspacePath, 'a.ts')
+    fs.writeFileSync(createdPath, 'export const a = 1\n')
 
     contentWatcher.emit([
-      { type: 'create', path: path.join(workspacePath, 'a.ts') },
+      { type: 'create', path: createdPath },
       { type: 'update', path: path.join(workspacePath, 'b.ts') }
     ])
 
     expect(sendToAllWindowsMock).not.toHaveBeenCalled()
 
-    await vi.advanceTimersByTimeAsync(120)
+    await waitForInvalidationEvents(1)
 
     const typedCalls = sendToAllWindowsMock.mock.calls.filter(
       ([channel]) => channel === DEEPCHAT_EVENT_CHANNEL
@@ -255,10 +269,32 @@ describe('WorkspaceService watchers', () => {
           workspacePath,
           kind: 'fs',
           source: 'watcher',
-          version: expect.any(Number)
+          version: expect.any(Number),
+          createdPaths: [createdPath]
         }
       }
     ])
+  })
+
+  it('omits created paths for directory creations', async () => {
+    await presenter.registerWorkspace(workspacePath)
+    await presenter.watchWorkspace(workspacePath)
+
+    const [contentWatcher] = fakeWatcherService.watchers
+    const createdDir = path.join(workspacePath, 'new-folder')
+    fs.mkdirSync(createdDir)
+
+    contentWatcher.emit([{ type: 'create', path: createdDir }])
+    await waitForInvalidationEvents(1)
+
+    const typedCalls = sendToAllWindowsMock.mock.calls.filter(
+      ([channel]) => channel === DEEPCHAT_EVENT_CHANNEL
+    )
+    expect(typedCalls[0][1].payload).toMatchObject({
+      kind: 'fs',
+      workspacePath,
+      createdPaths: []
+    })
   })
 
   it('emits git invalidations from git metadata watcher changes', async () => {
@@ -276,7 +312,8 @@ describe('WorkspaceService watchers', () => {
         workspacePath,
         kind: 'git',
         source: 'watcher',
-        version: expect.any(Number)
+        version: expect.any(Number),
+        createdPaths: []
       }
     })
   })

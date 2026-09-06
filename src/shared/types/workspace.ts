@@ -99,6 +99,7 @@ export type WorkspaceInvalidationEvent = {
   kind: WorkspaceInvalidationKind
   source: WorkspaceInvalidationSource
   version: number
+  createdPaths: string[]
 }
 
 export type WorkspaceWatchHealth = 'healthy' | 'degraded' | 'failed'
