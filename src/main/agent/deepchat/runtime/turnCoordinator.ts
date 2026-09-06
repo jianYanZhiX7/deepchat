@@ -483,6 +483,8 @@ export class TurnCoordinator {
         this.ports.runLifecycle.transitionStatus(scope, 'idle')
         return complete({ requestId: null, messageId: null, attachmentPreparation })
       }
+      const steerResumesSameMessage =
+        isSteerClaim && !content.activeSkills?.length && Boolean(reservedSteerAssistantMessageId)
       const {
         generationSettings,
         useContextBudget,
@@ -501,7 +503,9 @@ export class TurnCoordinator {
         signal: preStreamAbortSignal,
         projectDir,
         providerModelFacts,
-        runtimeActivatedSkillNames: content.activeSkills ?? []
+        runtimeActivatedSkillNames: steerResumesSameMessage
+          ? instance.getRuntimeActivatedSkills()
+          : content.activeSkills ?? []
       })
       // Retry truncation is destructive. Keep it after all independent resource I/O, but before
       // history/compaction preparation so those stages observe the replacement transcript.
