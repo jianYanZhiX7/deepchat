@@ -149,8 +149,8 @@ const getEntryAriaLabel = (entry: AgentPlanItem): string =>
     color-mix(in srgb, white 58%, hsl(var(--background)) 42%) 100%
   );
   box-shadow:
-    0 20px 40px -30px rgb(15 23 42 / 0.2),
-    0 8px 18px -18px rgb(15 23 42 / 0.08),
+    0 28px 56px -24px rgb(2 6 23 / 0.6),
+    0 14px 28px -12px rgb(2 6 23 / 0.32),
     inset 0 1px 0 rgb(255 255 255 / 0.42),
     inset 0 -10px 20px -18px rgb(148 163 184 / 0.18);
 }
@@ -224,8 +224,8 @@ const getEntryAriaLabel = (entry: AgentPlanItem): string =>
     color-mix(in srgb, hsl(var(--background)) 94%, rgb(15 23 42) 6%) 100%
   );
   box-shadow:
-    0 24px 48px -34px rgb(0 0 0 / 0.48),
-    0 12px 24px -22px rgb(0 0 0 / 0.26),
+    0 30px 60px -24px rgb(0 0 0 / 0.8),
+    0 16px 32px -16px rgb(0 0 0 / 0.54),
     inset 0 1px 0 rgb(255 255 255 / 0.08),
     inset 0 -14px 24px -22px rgb(0 0 0 / 0.36);
 }
