@@ -9,7 +9,7 @@ const normalizeFsPath = (value: string): string => {
 const flashingPaths = reactive(new Set<string>())
 const pruneTimers = new Map<string, ReturnType<typeof setTimeout>>()
 
-export const flashCreatedFiles = (paths: readonly string[]): void => {
+export const flashFiles = (paths: readonly string[]): void => {
   for (const rawPath of paths) {
     const filePath = normalizeFsPath(rawPath)
     if (!filePath) {

@@ -1,6 +1,6 @@
 import { onBeforeUnmount, watch, type Ref } from 'vue'
 import { createWorkspaceClient } from '@api/WorkspaceClient'
-import { flashCreatedFiles } from '@/lib/workspaceFileFlash'
+import { flashFiles } from '@/lib/workspaceFileFlash'
 import { useSidepanelStore } from '@/stores/ui/sidepanel'
 import { useUiSettingsStore } from '@/stores/uiSettingsStore'
 
@@ -31,8 +31,16 @@ export function useWorkspaceAutoOpen(options: UseWorkspaceAutoOpenOptions) {
   let watchedPath: string | null = null
   let syncToken = 0
 
-  const handleInvalidated = (payload: { workspacePath: string; createdPaths: string[] }) => {
-    if (payload.createdPaths.length === 0) {
+  const handleInvalidated = (payload: {
+    workspacePath: string
+    kind: 'fs' | 'git' | 'full'
+    source: 'watcher' | 'fallback' | 'lifecycle'
+    version: number
+    createdPaths: string[]
+    modifiedPaths: string[]
+  }) => {
+    const changedPaths = [...payload.createdPaths, ...payload.modifiedPaths]
+    if (changedPaths.length === 0) {
       return
     }
 
@@ -52,7 +60,7 @@ export function useWorkspaceAutoOpen(options: UseWorkspaceAutoOpenOptions) {
       return
     }
 
-    flashCreatedFiles(payload.createdPaths)
+    flashFiles(changedPaths)
 
     if (!sidepanelStore.open) {
       sidepanelStore.openWorkspaceAuto(sessionId)

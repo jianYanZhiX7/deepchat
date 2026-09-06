@@ -239,17 +239,19 @@ describe('WorkspaceService watchers', () => {
     expect(gitWatcher.close).toHaveBeenCalledTimes(1)
   })
 
-  it('debounces file-system invalidations into a single fs refresh event', async () => {
+  it('debounces fs invalidations into one event with created and modified paths', async () => {
     await presenter.registerWorkspace(workspacePath)
     await presenter.watchWorkspace(workspacePath)
 
     const [contentWatcher] = fakeWatcherService.watchers
     const createdPath = path.join(workspacePath, 'a.ts')
+    const modifiedPath = path.join(workspacePath, 'b.ts')
     fs.writeFileSync(createdPath, 'export const a = 1\n')
+    fs.writeFileSync(modifiedPath, 'export const b = 2\n')
 
     contentWatcher.emit([
       { type: 'create', path: createdPath },
-      { type: 'update', path: path.join(workspacePath, 'b.ts') }
+      { type: 'update', path: modifiedPath }
     ])
 
     expect(sendToAllWindowsMock).not.toHaveBeenCalled()
@@ -270,7 +272,8 @@ describe('WorkspaceService watchers', () => {
           kind: 'fs',
           source: 'watcher',
           version: expect.any(Number),
-          createdPaths: [createdPath]
+          createdPaths: [createdPath],
+          modifiedPaths: [modifiedPath]
         }
       }
     ])
@@ -313,7 +316,8 @@ describe('WorkspaceService watchers', () => {
         kind: 'git',
         source: 'watcher',
         version: expect.any(Number),
-        createdPaths: []
+        createdPaths: [],
+        modifiedPaths: []
       }
     })
   })
