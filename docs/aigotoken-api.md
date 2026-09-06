@@ -85,9 +85,11 @@ URL 常量集中于 `src/main/provider/auth/aigotoken/constants.ts`：
 | 字段 | 用途 |
 |---|---|
 | `id` | 模型 ID，同时作为展示名 |
-| `owned_by?` | 归属（可用于路由判断） |
+| `owned_by` | 由模型名首节纯英文派生（如 `deepseek-v4-pro` → `deepseek`），可用于能力族判断 |
 | `context_window?` / `context_length?` / `contextLength?` / `input_token_limit?` / `max_input_tokens?` | 上下文长度（按序取首个有效值） |
 | `max_tokens?` / `max_output_tokens?` / `output_token_limit?` | 最大输出 token |
+| `is_deepchat` | 是否 deepchat 可用模型（网关 `deepchat_model_config.json` 的 `models` 列表） |
+| `deepchat_default` | 是否 deepchat 默认模型（网关 `deepchat_model_config.json` 的 `default`，当前为 `deepseek-v4-pro`） |
 
 - 拉取后写入 provider 模型库并广播 `models.changed`；`/v1/models` 非 2xx 时：登录场景仅告警，同步场景返回 `false`，不中断会话。
 
@@ -150,5 +152,5 @@ new-api 网关可按模型选择协议（`resolveNewApiEndpointType`，`aiSdkPro
 
 1. Token 交换接口位于 `/api/oauth/token`（带 `/api` 前缀），与常规 `/oauth/token` 不同；网关侧若调整路由需同步修改 `constants.ts`。
 2. 内置默认 `baseUrl` 为 `https://www.aigotoken.com/v1`；用户在设置页可覆盖 baseUrl，归一化后域名将随配置变化。
-3. 兜底模型常量 `DEFAULT_MODEL_FALLBACK`（`src/main/session/defaultModelFallback.ts`）引用 `aigotoken/deepseek-v4-pro`，与网关实际模型需保持一致，避免会话创建后模型不可用。
+3. 兜底模型常量 `DEFAULT_MODEL_FALLBACK`（`src/main/session/defaultModelFallback.ts`）引用 `aigotoken/deepseek-v4-pro`，与网关实际模型需保持一致，避免会话创建后模型不可用。网关 `/v1/models` 已通过 `deepchat_default` 字段标识默认模型，客户端可优先读取该字段。
 4. 推理请求经由统一 AI SDK 通道（含 fetch dispatcher/代理），若走代理需保证对上述域名可达。
