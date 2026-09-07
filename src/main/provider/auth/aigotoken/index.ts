@@ -19,6 +19,7 @@ import {
   AIGOTOKEN_TOKEN_URL
 } from './constants'
 import { createAigotokenPkcePair, createAigotokenState } from './pkce'
+import { setDefaultModelFallback } from '@/session/defaultModelFallback'
 
 export type AigotokenProviderSettingsPort = {
   getProviderById(id: string): LLM_PROVIDER | undefined
@@ -47,6 +48,8 @@ type TokenResponse = {
 type AigotokenModelRecord = {
   id: string
   owned_by?: string
+  is_deepchat?: unknown
+  deepchat_default?: unknown
   context_window?: unknown
   context_length?: unknown
   contextLength?: unknown
@@ -55,6 +58,32 @@ type AigotokenModelRecord = {
   max_tokens?: unknown
   max_output_tokens?: unknown
   output_token_limit?: unknown
+}
+
+function isDeepchatUsable(record: AigotokenModelRecord): boolean {
+  return record.is_deepchat === true || record.is_deepchat === 'true'
+}
+
+function isGatewayDefault(record: AigotokenModelRecord): boolean {
+  return record.deepchat_default === true || record.deepchat_default === 'true'
+}
+
+function resolveDeepchatUsable(fetched: AigotokenModelRecord[]): AigotokenModelRecord[] {
+  const flagged = fetched.some((record) => record.is_deepchat !== undefined)
+  if (!flagged) {
+    return fetched
+  }
+  return fetched.filter(isDeepchatUsable)
+}
+
+function filterDeepchatUsable(fetched: AigotokenModelRecord[]): AigotokenModelRecord[] {
+  return resolveDeepchatUsable(fetched)
+}
+
+function resolveGatewayDefaultModelId(fetched: AigotokenModelRecord[]): string | null {
+  const usable = resolveDeepchatUsable(fetched)
+  const defaultRecord = usable.find(isGatewayDefault) ?? usable[0]
+  return defaultRecord?.id ?? null
 }
 
 function toPositiveTokens(value: unknown): number | undefined {
@@ -356,26 +385,42 @@ export class AigotokenAuth {
 
       const payload = (await response.json()) as { data?: AigotokenModelRecord[] }
 
-      const models = this.mapFetchedModels(payload.data || [])
-
-      if (models.length > 0) {
-        this.providerSettings.setProviderModels('aigotoken', models)
-        const modelStatusMap: Record<string, boolean> = {}
-        for (const model of models) {
-          modelStatusMap[model.id] = true
-        }
-        this.providerSettings.batchSetModelStatus('aigotoken', modelStatusMap)
-        this.publishEvent('models.changed', {
-          reason: 'runtime-refresh',
-          providerId: 'aigotoken',
-          version: Date.now()
-        })
+      const usableFetched = filterDeepchatUsable(payload.data || [])
+      if (usableFetched.length === 0) {
+        return
       }
+
+      const models = this.mapFetchedModels(usableFetched)
+
+      this.storeFetchedModels(models, usableFetched)
     } catch (error) {
       console.warn('aigotoken: model fetch failed after auth:', sanitizeError(error))
     } finally {
       clearTimeout(timeout)
     }
+  }
+
+  private storeFetchedModels(models: MODEL_META[], fetched: AigotokenModelRecord[]): void {
+    if (models.length === 0) {
+      return
+    }
+
+    this.providerSettings.setProviderModels('aigotoken', models)
+
+    const modelStatusMap: Record<string, boolean> = {}
+    for (const model of models) {
+      modelStatusMap[model.id] = true
+    }
+    this.providerSettings.batchSetModelStatus('aigotoken', modelStatusMap)
+
+    const defaultModelId = resolveGatewayDefaultModelId(fetched)
+    setDefaultModelFallback(defaultModelId ?? '')
+
+    this.publishEvent('models.changed', {
+      reason: 'runtime-refresh',
+      providerId: 'aigotoken',
+      version: Date.now()
+    })
   }
 
   async syncModels(): Promise<boolean> {
@@ -403,12 +448,12 @@ export class AigotokenAuth {
 
       const payload = (await response.json()) as { data?: AigotokenModelRecord[] }
 
-      const fetched = payload.data || []
-      if (fetched.length === 0) {
+      const usableFetched = filterDeepchatUsable(payload.data || [])
+      if (usableFetched.length === 0) {
         return false
       }
 
-      const models = this.mapFetchedModels(fetched)
+      const models = this.mapFetchedModels(usableFetched)
 
       const existingIds = new Set(
         this.providerSettings.getProviderModels('aigotoken').map((m) => m.id)
@@ -421,6 +466,9 @@ export class AigotokenAuth {
       for (const model of models) {
         this.providerSettings.ensureModelStatus('aigotoken', model.id, true)
       }
+
+      const defaultModelId = resolveGatewayDefaultModelId(usableFetched)
+      setDefaultModelFallback(defaultModelId ?? '')
 
       if (changed) {
         this.publishEvent('models.changed', {

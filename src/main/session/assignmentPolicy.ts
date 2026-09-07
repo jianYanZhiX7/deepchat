@@ -19,7 +19,7 @@ import {
   normalizeDisabledAgentTools
 } from '@/agent/shared/agentSessionNormalization'
 import { composeSubagentAuthority } from './subagentAuthority'
-import { DEFAULT_MODEL_FALLBACK } from './defaultModelFallback'
+import { DEFAULT_MODEL_FALLBACK, DEFAULT_MODEL_MISSING_ERROR } from './defaultModelFallback'
 
 const resolveAssignmentPermissionMode = (mode?: PermissionMode | null): PermissionMode =>
   mode ?? 'full_access'
@@ -68,6 +68,9 @@ export class SessionAssignmentPolicy implements SessionAssignmentPolicyPort {
           defaultModel?.modelId?.trim() ||
           DEFAULT_MODEL_FALLBACK.modelId
     this.assertAcpSessionHasWorkdir(providerId, projectDir)
+    if (!modelId) {
+      throw new Error(DEFAULT_MODEL_MISSING_ERROR)
+    }
 
     return {
       agentId: descriptor.id,
@@ -202,6 +205,9 @@ export class SessionAssignmentPolicy implements SessionAssignmentPolicyPort {
       DEFAULT_MODEL_FALLBACK.modelId
     if (providerId.toLowerCase() === 'acp') {
       throw new Error('Conversation history cannot be moved to ACP agents.')
+    }
+    if (!modelId) {
+      throw new Error(DEFAULT_MODEL_MISSING_ERROR)
     }
 
     return {

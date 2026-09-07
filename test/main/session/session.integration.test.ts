@@ -13,6 +13,7 @@ import { createDeepChatAgentBackendFixture } from '../agent/manager/deepChatAgen
 import type { DeepChatAgentBackendPort } from '@/agent/manager/deepChatAgentBackend'
 import { createSessionQueryFixture } from './queryFixture'
 import { createSessionFixture } from './sessionFixture'
+import { resetDefaultModelFallback, setDefaultModelFallback } from '@/session/defaultModelFallback'
 
 vi.mock('nanoid', () => ({ nanoid: vi.fn(() => 'mock-session-id') }))
 
@@ -1578,8 +1579,9 @@ describe('Session application coordinators', () => {
       )
     })
 
-    it('falls back to the built-in default model when none is configured', async () => {
+    it('falls back to the registered gateway default model when none is configured', async () => {
       providerSettings.getDefaultModel.mockReturnValue(null)
+      setDefaultModelFallback('deepchat-default-fixture')
 
       await lifecycle.createSession({ agentId: 'deepchat', message: 'Hi' }, 1)
 
@@ -1588,11 +1590,13 @@ describe('Session application coordinators', () => {
         expect.objectContaining({
           agentId: 'deepchat',
           providerId: 'aigotoken',
-          modelId: 'deepseek-v4-pro',
+          modelId: 'deepchat-default-fixture',
           projectDir: null,
           permissionMode: 'full_access'
         })
       )
+
+      resetDefaultModelFallback()
     })
 
     it('passes active skills as initial message-scoped skills without pinning the session', async () => {

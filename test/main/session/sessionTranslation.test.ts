@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { SessionTranslation, resolveTranslationLanguage } from '@/session/sessionTranslation'
+import { resetDefaultModelFallback, setDefaultModelFallback } from '@/session/defaultModelFallback'
 
 function createFixture() {
   const resolveBackend = vi.fn(() => ({ kind: 'deepchat' }))
@@ -83,19 +84,31 @@ describe('SessionTranslation', () => {
     )
   })
 
-  it('returns empty input without model work and falls back to the built-in model when unset', async () => {
+  it('returns empty input without model work and falls back to the registered gateway default when unset', async () => {
     const fixture = createFixture()
     await expect(fixture.service.translate('   ')).resolves.toBe('')
     expect(fixture.resolveBackend).not.toHaveBeenCalled()
 
     fixture.getDefaultModel.mockReturnValue(null)
+    setDefaultModelFallback('deepchat-default-fixture')
     await expect(fixture.service.translate('hello')).resolves.toBe('translated')
     expect(fixture.generateCompletion).toHaveBeenCalledWith(
       'aigotoken',
       expect.any(Array),
-      'deepseek-v4-pro',
+      'deepchat-default-fixture',
       0.2,
       1024
+    )
+    resetDefaultModelFallback()
+  })
+
+  it('rejects translation with an explicit error when no gateway default is registered', async () => {
+    const fixture = createFixture()
+    fixture.getDefaultModel.mockReturnValue(null)
+    resetDefaultModelFallback()
+
+    await expect(fixture.service.translate('hello')).rejects.toThrow(
+      'No default model is available'
     )
   })
 

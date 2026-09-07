@@ -5,6 +5,7 @@ import { ApiEndpointType, ModelType } from '../../../src/shared/model'
 import { AiSdkProvider } from '../../../src/main/provider/providers/aiSdkProvider'
 import { resolveAiSdkProviderDefinition } from '../../../src/main/provider/providerRegistry'
 import { modelCapabilities } from '../../../src/main/provider/modelCapabilities'
+import { DEFAULT_MODEL_FALLBACK, resetDefaultModelFallback } from '@/session/defaultModelFallback'
 
 const { mockRunAiSdkCoreStream } = vi.hoisted(() => ({
   mockRunAiSdkCoreStream: vi.fn()
@@ -1091,5 +1092,58 @@ describe('NewApiProvider capability routing', () => {
     const modelConfig = mockRunAiSdkCoreStream.mock.calls.at(-1)?.[3]
     expect(modelConfig.apiEndpoint).toBe(ApiEndpointType.Image)
     expect(providerSettings.getModelConfig).toHaveBeenCalledOnce()
+  })
+})
+
+describe('NewApiProvider deepchat model gating', () => {
+  function stubModelsFetch(records: unknown[]) {
+    const fetchMock = vi.fn<typeof fetch>(async (input) => {
+      if (String(input).includes('/v1/models')) {
+        return new Response(JSON.stringify({ data: records }), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' }
+        })
+      }
+      throw new Error(`Unexpected fetch: ${String(input)}`)
+    })
+    vi.stubGlobal('fetch', fetchMock)
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    vi.restoreAllMocks()
+    resetDefaultModelFallback()
+  })
+
+  it('stores only is_deepchat models and registers the deepchat_default record', async () => {
+    stubModelsFetch([
+      { id: 'chat-a', is_deepchat: true },
+      { id: 'chat-b', is_deepchat: true, deepchat_default: true },
+      { id: 'embed-x', is_deepchat: false }
+    ])
+    resetDefaultModelFallback()
+
+    const provider = new AiSdkProvider(
+      createProvider({ id: 'aigotoken', baseUrl: 'https://www.aigotoken.com/v1' }),
+      createProviderSettings()
+    )
+
+    const models = await provider.fetchModels()
+
+    expect(models.map((model) => model.id)).toEqual(['chat-a', 'chat-b'])
+    expect(models.every((model) => model.providerId === 'aigotoken')).toBe(true)
+    expect(DEFAULT_MODEL_FALLBACK).toMatchObject({ providerId: 'aigotoken', modelId: 'chat-b' })
+  })
+
+  it('passes payloads without is_deepchat markers through without registering a default', async () => {
+    stubModelsFetch([{ id: 'legacy-a' }, { id: 'legacy-b' }])
+    resetDefaultModelFallback()
+
+    const provider = new AiSdkProvider(createProvider(), createProviderSettings())
+
+    const models = await provider.fetchModels()
+
+    expect(models.map((model) => model.id)).toEqual(['legacy-a', 'legacy-b'])
+    expect(DEFAULT_MODEL_FALLBACK.modelId).toBe('')
   })
 })

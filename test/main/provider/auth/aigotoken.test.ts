@@ -2,6 +2,7 @@ import { shell } from 'electron'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { AigotokenAuth } from '@/provider/auth/aigotoken'
 import { createAigotokenPkcePair, createAigotokenState } from '@/provider/auth/aigotoken/pkce'
+import { DEFAULT_MODEL_FALLBACK, resetDefaultModelFallback } from '@/session/defaultModelFallback'
 import type { LLM_PROVIDER, MODEL_META } from '@shared/types/provider'
 
 const { startOAuthLoopbackCallbackSessionMock } = vi.hoisted(() => ({
@@ -47,7 +48,9 @@ function makeProviderStore(initial?: LLM_PROVIDER) {
     setProviderModels: vi.fn((_id: string, models: MODEL_META[]) => {
       storedModels = models
     }),
+    getProviderModels: vi.fn((_id: string) => storedModels),
     batchSetModelStatus: vi.fn(),
+    ensureModelStatus: vi.fn(),
     getStoredModels: () => storedModels
   }
 }
@@ -638,5 +641,83 @@ describe('Aigotoken auth', () => {
     expect(error).toContain('Bearer [redacted]')
     expect(error).not.toContain('sk-secret-leaked-key-123')
     expect(error).not.toContain('eyJhbGciOiJI')
+  })
+
+  describe('syncModels deepchat gating', () => {
+    function stubModelsFetch(records: unknown[]) {
+      const fetchMock = vi.fn<typeof fetch>(async (input) => {
+        if (String(input).includes('/v1/models')) {
+          return jsonResponse({ data: records })
+        }
+        throw new Error(`Unexpected fetch: ${String(input)}`)
+      })
+      vi.stubGlobal('fetch', fetchMock)
+    }
+
+    beforeEach(() => {
+      resetDefaultModelFallback()
+    })
+
+    afterEach(() => {
+      resetDefaultModelFallback()
+    })
+
+    it('stores only is_deepchat models and registers the deepchat_default record', async () => {
+      stubModelsFetch([
+        { id: 'chat-a', is_deepchat: true },
+        { id: 'chat-b', is_deepchat: true, deepchat_default: true },
+        { id: 'embed-x', is_deepchat: false },
+        { id: 'legacy-n', owned_by: 'openai' }
+      ])
+      const store = makeProviderStore(makeProvider({ apiKey: 'sk-sync' }))
+      const auth = new AigotokenAuth(store, vi.fn())
+
+      await expect(auth.syncModels()).resolves.toBe(true)
+
+      expect(store.setProviderModels).toHaveBeenCalledWith('aigotoken', [
+        expect.objectContaining({ id: 'chat-a' }),
+        expect.objectContaining({ id: 'chat-b' })
+      ])
+      expect(store.ensureModelStatus).toHaveBeenCalledWith('aigotoken', 'chat-b', true)
+      expect(DEFAULT_MODEL_FALLBACK).toMatchObject({ providerId: 'aigotoken', modelId: 'chat-b' })
+    })
+
+    it('uses the first usable model when deepchat_default is absent', async () => {
+      stubModelsFetch([
+        { id: 'chat-a', is_deepchat: true },
+        { id: 'chat-b', is_deepchat: true }
+      ])
+      const store = makeProviderStore(makeProvider({ apiKey: 'sk-sync' }))
+      const auth = new AigotokenAuth(store, vi.fn())
+
+      await expect(auth.syncModels()).resolves.toBe(true)
+      expect(DEFAULT_MODEL_FALLBACK.modelId).toBe('chat-a')
+    })
+
+    it('keeps stored models intact and registers nothing when no model is deepchat usable', async () => {
+      stubModelsFetch([
+        { id: 'embed-x', is_deepchat: false },
+        { id: 'chat-b', is_deepchat: false }
+      ])
+      const store = makeProviderStore(makeProvider({ apiKey: 'sk-sync' }))
+      const auth = new AigotokenAuth(store, vi.fn())
+
+      await expect(auth.syncModels()).resolves.toBe(false)
+      expect(store.setProviderModels).not.toHaveBeenCalled()
+      expect(DEFAULT_MODEL_FALLBACK.modelId).toBe('')
+    })
+
+    it('passes legacy payloads without is_deepchat through and defaults to the first model', async () => {
+      stubModelsFetch([{ id: 'legacy-a' }, { id: 'legacy-b' }])
+      const store = makeProviderStore(makeProvider({ apiKey: 'sk-sync' }))
+      const auth = new AigotokenAuth(store, vi.fn())
+
+      await expect(auth.syncModels()).resolves.toBe(true)
+      expect(store.setProviderModels).toHaveBeenCalledWith('aigotoken', [
+        expect.objectContaining({ id: 'legacy-a' }),
+        expect.objectContaining({ id: 'legacy-b' })
+      ])
+      expect(DEFAULT_MODEL_FALLBACK.modelId).toBe('legacy-a')
+    })
   })
 })

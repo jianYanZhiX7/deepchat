@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { SessionAssignmentPolicy } from '@/session/assignmentPolicy'
+import { resetDefaultModelFallback, setDefaultModelFallback } from '@/session/defaultModelFallback'
 import {
   normalizeActiveSkills,
   normalizeDisabledAgentTools,
@@ -66,9 +67,10 @@ describe('SessionAssignmentPolicy', () => {
     })
   })
 
-  it('falls back to the built-in default model when nothing is configured', async () => {
+  it('falls back to the registered gateway default model when nothing is configured', async () => {
     const { policy, config } = createHarness()
     config.getDefaultModel.mockReturnValue(null)
+    setDefaultModelFallback('deepchat-default-fixture')
 
     await expect(
       policy.resolveCreateAssignment({
@@ -79,14 +81,33 @@ describe('SessionAssignmentPolicy', () => {
       agentId: 'reviewer',
       agentType: 'deepchat',
       providerId: 'aigotoken',
-      modelId: 'deepseek-v4-pro'
+      modelId: 'deepchat-default-fixture'
     })
 
     await expect(policy.resolveTransferTarget('reviewer', null)).resolves.toMatchObject({
       agentId: 'reviewer',
       providerId: 'aigotoken',
-      modelId: 'deepseek-v4-pro'
+      modelId: 'deepchat-default-fixture'
     })
+
+    resetDefaultModelFallback()
+  })
+
+  it('rejects with an explicit error when no gateway default is registered', async () => {
+    const { policy, config } = createHarness()
+    config.getDefaultModel.mockReturnValue(null)
+    resetDefaultModelFallback()
+
+    await expect(
+      policy.resolveCreateAssignment({
+        agentId: 'reviewer',
+        preserveExplicitNullProjectDir: false
+      })
+    ).rejects.toThrow('No default model is available')
+
+    await expect(policy.resolveTransferTarget('reviewer', null)).rejects.toThrow(
+      'No default model is available'
+    )
   })
 
   it('owns the full-access default for omitted assignment modes', async () => {

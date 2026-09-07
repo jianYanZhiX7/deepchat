@@ -1,5 +1,6 @@
 import type { ProviderSettingsPort } from '@/provider/settings'
 import { EMBEDDING_TEST_KEY, isNormalized } from '@/utils/vector'
+import { setDefaultModelFallback } from '@/session/defaultModelFallback'
 import {
   ApiEndpointType,
   ModelType,
@@ -1957,6 +1958,8 @@ export class AiSdkProvider extends BaseLLMProvider {
       description?: unknown
       type?: unknown
       supported_endpoint_types?: unknown
+      is_deepchat?: unknown
+      deepchat_default?: unknown
       context_window?: unknown
       context_length?: unknown
       contextLength?: unknown
@@ -1986,7 +1989,14 @@ export class AiSdkProvider extends BaseLLMProvider {
     )
     const rawModels = Array.isArray(payload.data) ? payload.data : []
 
-    const models = rawModels
+    const deepchatFlagged = rawModels.some((record) => record.is_deepchat !== undefined)
+    const usableRawModels = deepchatFlagged
+      ? rawModels.filter(
+          (record) => record.is_deepchat === true || record.is_deepchat === 'true'
+        )
+      : rawModels
+
+    const models = usableRawModels
       .filter((rawModel): rawModel is NewApiModelRecord & { id: string } => {
         return typeof rawModel.id === 'string' && rawModel.id.trim().length > 0
       })
@@ -2050,6 +2060,18 @@ export class AiSdkProvider extends BaseLLMProvider {
           ...(maxTokensCandidate !== undefined ? { maxTokens: maxTokensCandidate } : {})
         } satisfies MODEL_META
       })
+
+    if (deepchatFlagged) {
+      const defaultRecord =
+        usableRawModels.find(
+          (record) => record.deepchat_default === true || record.deepchat_default === 'true'
+        ) ?? usableRawModels[0]
+      const defaultModelId =
+        typeof defaultRecord?.id === 'string' ? defaultRecord.id.trim() : ''
+      if (defaultModelId) {
+        setDefaultModelFallback(defaultModelId)
+      }
+    }
 
     return models
   }

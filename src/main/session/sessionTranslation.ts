@@ -2,7 +2,7 @@ import { resolveAssistantModelSelection } from '@/agent/shared/assistantModelSel
 import type { AgentSettingsPort } from '@/agent/settings'
 import type { AgentManager } from '@/agent/manager/agentManager'
 import type { ProviderRuntimePort } from '@shared/types/provider'
-import { DEFAULT_MODEL_FALLBACK } from './defaultModelFallback'
+import { DEFAULT_MODEL_FALLBACK, DEFAULT_MODEL_MISSING_ERROR } from './defaultModelFallback'
 
 export function resolveTranslationLanguage(locale?: string): string {
   const normalized = locale?.trim().toLowerCase() || ''
@@ -55,6 +55,9 @@ export class SessionTranslation {
       defaultModel?.providerId?.trim() || DEFAULT_MODEL_FALLBACK.providerId,
       defaultModel?.modelId?.trim() || DEFAULT_MODEL_FALLBACK.modelId
     )
+    if (!selection.providerId || !selection.modelId) {
+      throw new Error(DEFAULT_MODEL_MISSING_ERROR)
+    }
 
     const translated = await this.dependencies.providerRuntime.generateCompletion(
       selection.providerId,
