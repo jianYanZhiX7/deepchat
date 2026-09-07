@@ -75,9 +75,9 @@ URL 常量集中于 `src/main/provider/auth/aigotoken/constants.ts`：
 
 | 调用点 | 触发 | 代码 |
 |---|---|---|
-| 登录成功后拉取入库 | OAuth 完成 → `fetchAndStoreModels()` | `index.ts:339-379` |
-| 手动同步 | UI 触发 → `syncModels()`（返回是否有变化） | `index.ts:381-440` |
-| 运行时通用拉取 | 模型来源刷新/巡检（new-api modelSource） | `aiSdkProvider.ts:1976 fetchNewApiModels` |
+| 登录成功后拉取入库 | OAuth 完成 → `fetchAndStoreModels()` → `storeFetchedModels()` | `index.ts:368-422` |
+| 手动同步 | UI 触发 → `syncModels()`（返回是否有变化） | `index.ts:426-488` |
+| 运行时通用拉取 | 模型来源刷新/巡检（new-api modelSource） | `aiSdkProvider.ts:1953 fetchNewApiModels` |
 
 - 请求头：`Authorization: Bearer <sk->`
 - 响应：`{ "data": [ ModelRecord ] }`，字段：
@@ -85,13 +85,15 @@ URL 常量集中于 `src/main/provider/auth/aigotoken/constants.ts`：
 | 字段 | 用途 |
 |---|---|
 | `id` | 模型 ID，同时作为展示名 |
-| `owned_by` | 由模型名首节纯英文派生（如 `deepseek-v4-pro` → `deepseek`），可用于能力族判断 |
+| `owned_by` | 由模型名首节纯英文派生（如 `deepseek-chat` → `deepseek`），可用于能力族判断 |
 | `context_window?` / `context_length?` / `contextLength?` / `input_token_limit?` / `max_input_tokens?` | 上下文长度（按序取首个有效值） |
 | `max_tokens?` / `max_output_tokens?` / `output_token_limit?` | 最大输出 token |
-| `is_deepchat` | 是否 deepchat 可用模型（网关 `deepchat_model_config.json` 的 `models` 列表） |
-| `deepchat_default` | 是否 deepchat 默认模型（网关 `deepchat_model_config.json` 的 `default`，当前为 `deepseek-v4-pro`） |
+| `is_deepchat` | 是否 deepchat 可用模型（网关 `deepchat_model_config.json` 的 `models` 列表）。**只有该字段为 `true` 的记录才会进入 deepchat 模型列表** |
+| `deepchat_default` | 是否为 deepchat 默认模型（网关 `deepchat_model_config.json` 的 `default`）；登录/同步后由客户端注册为全局兜底默认 |
 
-- 拉取后写入 provider 模型库并广播 `models.changed`；`/v1/models` 非 2xx 时：登录场景仅告警，同步场景返回 `false`，不中断会话。
+- 入库展示前按 `is_deepchat` 过滤：仅 `is_deepchat === true` 的记录写入 provider 模型库；仅当响应完全不携带该字段（旧网关）时才全量透传。
+- 默认模型动态注册：从过滤后的记录中取 `deepchat_default === true` 者，未标记时取首个可用记录，经 `setDefaultModelFallback()` 注册为会话兜底默认（`src/main/session/defaultModelFallback.ts`）。登录前/网关无可用模型时兜底为空，创建会话或消息翻译会显式报错提示先登录或配置默认模型，不再引用任何固定模型名。
+- `/v1/models` 非 2xx 或过滤后无可用模型时：登录场景仅告警，同步场景返回 `false`，不中断会话、不清空已入库列表；成功入库后广播 `models.changed`。
 
 ### 2.4 对话推理 — `POST /v1/chat/completions`
 
@@ -152,5 +154,5 @@ new-api 网关可按模型选择协议（`resolveNewApiEndpointType`，`aiSdkPro
 
 1. Token 交换接口位于 `/api/oauth/token`（带 `/api` 前缀），与常规 `/oauth/token` 不同；网关侧若调整路由需同步修改 `constants.ts`。
 2. 内置默认 `baseUrl` 为 `https://www.aigotoken.com/v1`；用户在设置页可覆盖 baseUrl，归一化后域名将随配置变化。
-3. 兜底模型常量 `DEFAULT_MODEL_FALLBACK`（`src/main/session/defaultModelFallback.ts`）引用 `aigotoken/deepseek-v4-pro`，与网关实际模型需保持一致，避免会话创建后模型不可用。网关 `/v1/models` 已通过 `deepchat_default` 字段标识默认模型，客户端可优先读取该字段。
+3. 兜底默认模型 `DEFAULT_MODEL_FALLBACK`（`src/main/session/defaultModelFallback.ts`）**不再引用固定模型名**：登录成功、手动同步与运行时拉取后，均从网关响应按 `deepchat_default`（未标记时取首个可用记录）动态注册；未注册（未登录或网关无可用模型）时兜底为空，会话创建与消息翻译会抛出 `No default model is available ...` 提示先登录 Aigotoken 或设置默认模型，避免用失效/臆造的模型建会话。
 4. 推理请求经由统一 AI SDK 通道（含 fetch dispatcher/代理），若走代理需保证对上述域名可达。
