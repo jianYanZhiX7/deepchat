@@ -161,6 +161,56 @@ Node 运行时。`systematic-debugging` 与 `writing-plans` 移除了上游未�
 | --- | --- |
 | `academic-writing-skills` | 学术写作全流程（议题提炼、综述、论证、引用规范与润色） |
 
+## Panniantong/Agent-Reach
+
+- 仓库：<https://github.com/Panniantong/Agent-Reach>
+- 许可：MIT（Copyright (c) 2025 Agent Eyes）
+- 引入版本：`a19a171fa980a0785849596492e0af4db800c82f`（v1.5.0，2026-09-15）
+- 上游路径：`agent_reach/skill/`
+
+| Skill | 说明 |
+| --- | --- |
+| `agent-reach` | 互联网能力路由器：16 平台多后端选型与访问（搜索、社媒、招聘、开发、网页、视频、金融） |
+
+本地改动：`SKILL.md` 移除了上游 OpenClaw skill 路径与 `check-update` 自更新提示，将环境检查从
+固定 conda 环境改为通用 `PATH` 检查，并补充 DeepChat 下的安装与授权指引；`references/` 按上游原文引入。
+Agent Reach 本体（CLI）不随 DeepChat 分发，由用户授权后在运行时按需安装。
+
+## jackwener/OpenCLI
+
+- 仓库：<https://github.com/jackwener/OpenCLI>
+- 许可：Apache-2.0
+- 引入版本：`8271afc67e8504bda94c147f446ee29775d08274`（v1.8.8，2026-08-30）
+- 上游路径：`skills/`
+
+| Skill | 说明 |
+| --- | --- |
+| `opencli-usage` | OpenCLI 总览：适配器发现、通用参数、输出格式与策略 |
+| `opencli-browser` | 通过 opencli 驱动真实 Chrome：检查页面、填表、点击、抓取 |
+| `smart-search` | 基于 opencli 的智能搜索路由器（含 8 个来源分类 references） |
+| `opencli-autofix` | 适配器失效后的自动诊断与修复流程 |
+
+本地改动：为适配 DeepChat 扁平 skill 布局且不引入未随包分发的 `opencli-adapter-author` /
+`opencli-browser-sitemap` / `opencli-sitemap-author`，`opencli-usage` 与 `opencli-browser` 中指向这些
+skill 的引用已移除或改写；其余正文按上游引入。OpenCLI 本体（CLI + Chrome 扩展）不随 DeepChat 分发，
+由用户按需安装。
+
+## OpenSenseNova/SenseNova-Skills
+
+- 仓库：<https://github.com/OpenSenseNova/SenseNova-Skills>
+- 许可：MIT（Copyright (c) 2026 SenseNova）
+- 引入版本：`5abde96fed2148aaf6a0ed55f0f4708f2b0845f5`（2026-09-18）
+- 上游路径：`skills/`
+
+| Skill | 说明 |
+| --- | --- |
+| `sn-search-social-cn` | 中文社交平台搜索：B站/知乎/抖音脚本 + 小红书/微博网页兜底 |
+| `sn-search-market-cn` | 中国市场官方免费源检索：公告/年报/宏观/监管/招投标等 |
+
+本地改动：`browser-use` 统一替换为本仓库的 `opencli browser`（见 `opencli-browser` skill），并补充
+浏览器兜底说明；仓库根 `.env` 凭证说明改为一句话的环境变量/CLI 参数说明。脚本与 `requirements.txt`
+按上游引入，依赖按需安装。
+
 ## 来源筛选口径
 
 仅纳入同时满足以下条件的仓库：
