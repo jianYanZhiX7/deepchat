@@ -829,29 +829,33 @@ export class SkillService implements SkillServicePort {
       const normalizedAgentId = assertSafeSkillAgentId(agent.id)
       const root = this.getAgentSkillsRoot(normalizedAgentId)
       const markerPath = path.join(root, AGENT_SKILL_MIGRATION_MARKER)
-      if (!fs.existsSync(markerPath)) continue
+      const committedScope = fs.existsSync(markerPath)
+      // A protected preset shipped after the one-time migration has no committed scope yet.
+      if (!committedScope && agent.protected !== true) continue
 
       const selected = Array.from(new Set(agent.enabledSkillNames)).filter(
         (name) => this.isSafeSkillName(name) && builtinByName.has(name)
       )
       if (selected.length === 0) continue
 
-      let declaredNames: string[]
-      try {
-        const parsed = JSON.parse(fs.readFileSync(markerPath, 'utf-8')) as {
-          agentId?: unknown
-          skillNames?: unknown
-        }
-        if (
-          parsed.agentId !== normalizedAgentId ||
-          !Array.isArray(parsed.skillNames) ||
-          !parsed.skillNames.every((name): name is string => typeof name === 'string')
-        ) {
+      let declaredNames: string[] = []
+      if (committedScope) {
+        try {
+          const parsed = JSON.parse(fs.readFileSync(markerPath, 'utf-8')) as {
+            agentId?: unknown
+            skillNames?: unknown
+          }
+          if (
+            parsed.agentId !== normalizedAgentId ||
+            !Array.isArray(parsed.skillNames) ||
+            !parsed.skillNames.every((name): name is string => typeof name === 'string')
+          ) {
+            continue
+          }
+          declaredNames = parsed.skillNames
+        } catch {
           continue
         }
-        declaredNames = parsed.skillNames
-      } catch {
-        continue
       }
 
       const declared = new Set(declaredNames)

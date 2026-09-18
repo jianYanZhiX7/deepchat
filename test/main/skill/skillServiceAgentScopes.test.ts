@@ -338,6 +338,34 @@ describe('SkillService Agent scopes', () => {
     expect(state.agents.expert.skills['skill-b'].disabled).toBe(true)
   })
 
+  it('materializes a scope for a protected preset Agent created after migration completed', async () => {
+    writeSkill(skillsRoot, 'skill-a', '# A')
+    writeSkill(skillsRoot, 'skill-b', '# B')
+    const builtinItem = (name: string) => toUnifiedItem(name, path.join(skillsRoot, name))
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue([
+      builtinItem('skill-a'),
+      builtinItem('skill-b')
+    ])
+
+    await (service as any).migrateLegacyAgentSkillScopes()
+    expect(settingsState?.migration?.completedAt).toEqual(expect.any(String))
+    expect(settingsState?.migration?.targetAgentIds).toEqual([])
+
+    agents.push({ id: 'researcher', protected: true, enabledSkillNames: ['skill-a'] })
+    await (service as any).reconcileAgentSkillScopes()
+
+    const researcherRoot = resolveAgentSkillsRoot(skillsRoot, 'researcher')
+    expect(fs.existsSync(path.join(researcherRoot, 'skill-a', 'SKILL.md'))).toBe(true)
+    expect(fs.existsSync(path.join(researcherRoot, 'skill-b'))).toBe(false)
+    const marker = JSON.parse(
+      fs.readFileSync(path.join(researcherRoot, '.deepchat-skill-migration.json'), 'utf-8')
+    ) as { agentId: string; skillNames: string[] }
+    expect(marker).toMatchObject({ agentId: 'researcher', skillNames: ['skill-a'] })
+    await expect(service.getMetadataList('researcher')).resolves.toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: 'skill-a' })])
+    )
+  })
+
   it('skips Agent scopes that were not created by the migration during reconcile', async () => {
     writeSkill(skillsRoot, 'skill-a', '# A')
     writeSkill(skillsRoot, 'skill-b', '# B')
