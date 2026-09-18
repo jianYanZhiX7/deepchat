@@ -12,10 +12,10 @@
           <TooltipTrigger as-child>
             <Button
               data-testid="window-sidebar-aigotoken-button"
-              class="flex items-center justify-center w-10 h-10 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
+              class="flex items-center justify-center w-9 h-9 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
               @click="openAigotokenWebsite"
             >
-              <img :src="aigotokenIcon" alt="aigotoken" class="w-6 h-6 shrink-0 object-contain" />
+              <img :src="aigotokenIcon" alt="aigotoken" class="w-4 h-4 shrink-0 object-contain" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">aigotoken.com</TooltipContent>
@@ -47,11 +47,11 @@
           <TooltipTrigger as-child>
             <Button
               data-testid="window-sidebar-weixin-ilink-button"
-              class="flex items-center justify-center w-10 h-10 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
+              class="flex items-center justify-center w-9 h-9 p-0 rounded-xl bg-transparent border-none hover:bg-white/30 dark:hover:bg-white/10 shadow-none"
               :title="t('settings.remote.weixinIlink.title')"
               @click="openWeixinIlinkSettings"
             >
-              <img :src="weixinIlinkLogoUrl" alt="" class="w-6 h-6 shrink-0 object-contain" />
+              <img :src="weixinIlinkLogoUrl" alt="" class="w-4 h-4 shrink-0 object-contain" />
             </Button>
           </TooltipTrigger>
           <TooltipContent side="right">
