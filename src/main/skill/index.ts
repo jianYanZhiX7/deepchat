@@ -671,7 +671,7 @@ export class SkillService implements SkillServicePort {
     this.materializeLegacySkillAllowList(
       state,
       BUILTIN_SKILL_AGENT_ID,
-      builtinCatalog,
+      builtinCatalog.filter((skill) => !skill.ownerPluginId),
       agentsById.get(BUILTIN_SKILL_AGENT_ID)?.enabledSkillNames
     )
     this.saveManagementState(state)
@@ -807,6 +807,18 @@ export class SkillService implements SkillServicePort {
     const builtinByName = new Map(
       builtinCatalog.filter((skill) => !skill.ownerPluginId).map((skill) => [skill.name, skill])
     )
+
+    const builtinAgent = agents.find((agent) => agent.id === BUILTIN_SKILL_AGENT_ID)
+    if (builtinAgent && Array.isArray(builtinAgent.enabledSkillNames)) {
+      const state = this.getStoredManagementState()
+      this.materializeLegacySkillAllowList(
+        state,
+        BUILTIN_SKILL_AGENT_ID,
+        Array.from(builtinByName.values()),
+        builtinAgent.enabledSkillNames
+      )
+      this.saveManagementState(state)
+    }
 
     for (const agent of agents) {
       if (agent.id === BUILTIN_SKILL_AGENT_ID) continue

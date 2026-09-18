@@ -1,0 +1,31 @@
+{
+  "id": "deepchat",
+  "name": "DeepChat",
+  "enabledSkillNames": [
+    "docx",
+    "pptx",
+    "pdf",
+    "xlsx",
+    "doc-coauthoring",
+    "humanizer-zh",
+    "baoyu-format-markdown",
+    "web-search",
+    "brainstorming",
+    "writing-plans",
+    "systematic-debugging",
+    "test-driven-development",
+    "verification-before-completion",
+    "code-review",
+    "code-simplification",
+    "git-commit",
+    "frontend-design",
+    "security-and-hardening",
+    "performance-optimization",
+    "api-and-interface-design",
+    "documentation-and-adrs",
+    "skill-creator",
+    "mcp-builder",
+    "memory-management",
+    "deepchat-settings"
+  ]
+}

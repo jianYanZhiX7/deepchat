@@ -216,6 +216,41 @@ describe('SkillService Agent scopes', () => {
     expect(settingsState?.agents.deepchat.skills['skill-b'].disabled).toBe(true)
   })
 
+  it('re-applies the builtin allow-list after the one-time migration completed', async () => {
+    const skillA = toUnifiedItem('skill-a', writeSkill(skillsRoot, 'skill-a', '# A'))
+    const skillB = toUnifiedItem('skill-b', writeSkill(skillsRoot, 'skill-b', '# B'))
+    agents = [{ id: 'deepchat', protected: true }]
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue([skillA, skillB])
+
+    await (service as any).migrateLegacyAgentSkillScopes()
+    expect(settingsState?.migration?.completedAt).toEqual(expect.any(String))
+    expect(settingsState?.agents.deepchat.skills['skill-b'].disabled).toBe(false)
+
+    agents = [{ id: 'deepchat', protected: true, enabledSkillNames: ['skill-a'] }]
+    await (service as any).reconcileAgentSkillScopes()
+
+    expect(settingsState?.agents.deepchat.skills['skill-a'].disabled).toBe(false)
+    expect(settingsState?.agents.deepchat.skills['skill-b'].disabled).toBe(true)
+  })
+
+  it('keeps unlisted Plugin Skills visible when applying the builtin allow-list', async () => {
+    const regular = toUnifiedItem('skill-a', writeSkill(skillsRoot, 'skill-a', '# A'))
+    const plugin: UnifiedSkillItem = {
+      ...toUnifiedItem(
+        'plugin-skill',
+        writeSkill(path.join(temporaryRoot, 'plugin'), 'plugin-skill', '# P')
+      ),
+      ownerPluginId: 'plugin-owner'
+    }
+    agents = [{ id: 'deepchat', protected: true, enabledSkillNames: ['skill-a'] }]
+    vi.spyOn(service, 'getUnifiedSkillCatalog').mockResolvedValue([regular, plugin])
+
+    await (service as any).reconcileAgentSkillScopes()
+
+    expect(settingsState?.agents.deepchat.skills['skill-a'].disabled).toBe(false)
+    expect(settingsState?.agents.deepchat.skills['plugin-skill']?.disabled).not.toBe(true)
+  })
+
   it('uses the frozen legacy allow-list for an unreadable Agent config', async () => {
     writeSkill(skillsRoot, 'skill-a', '# A')
     writeSkill(skillsRoot, 'skill-b', '# B')
