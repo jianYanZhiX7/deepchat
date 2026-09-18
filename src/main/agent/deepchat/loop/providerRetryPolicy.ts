@@ -134,7 +134,7 @@ function readTransientSocketCode(value: unknown): string | undefined {
 export function resolveFriendlyProviderFailureText(error: unknown): string | null {
   if (error === null || error === undefined) return null
   const visited = new Set<unknown>()
-  let current = error
+  let current: unknown = error
   for (let depth = 0; depth < MAX_FAILURE_CAUSE_DEPTH && current !== undefined; depth += 1) {
     if (visited.has(current)) break
     visited.add(current)
