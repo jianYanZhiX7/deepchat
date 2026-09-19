@@ -20,8 +20,7 @@
           v-for="agent in displayedAgents"
           :key="agent.id"
           class="flex items-center gap-3 rounded-xl border border-border/60 bg-card/40 px-4 py-3 text-left transition-all duration-150 hover:border-border hover:bg-accent/40"
-          @mouseenter="hoveredAgentId = agent.id"
-          @mouseleave="hoveredAgentId = null"
+          @mouseenter="previewAgentId = agent.id"
           @click="selectAgent(agent.id)"
         >
           <div
@@ -60,9 +59,9 @@ const { t } = useI18n()
 const settingsClient = createSettingsClient()
 const agentStore = useAgentStore()
 const displayedAgents = computed(() => agentStore.enabledAgents.slice(0, 9))
-const hoveredAgentId = ref<string | null>(null)
+const previewAgentId = ref<string | null>(null)
 const headerAgent = computed(
-  () => displayedAgents.value.find((agent) => agent.id === hoveredAgentId.value) ?? null
+  () => displayedAgents.value.find((agent) => agent.id === previewAgentId.value) ?? null
 )
 
 const selectAgent = (agentId: string) => {

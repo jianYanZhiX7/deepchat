@@ -92,8 +92,13 @@ describe('AgentWelcomePage', () => {
     expect(headerAvatar().attributes('data-agent-id')).toBe('agent-1')
     expect(wrapper.find('img').exists()).toBe(false)
     await agentButtons[0].trigger('mouseleave')
-    expect(wrapper.find('img').exists()).toBe(true)
-    expect(wrapper.find('img').attributes('src')).toContain('logo-dark.png')
+    expect(headerAvatar().attributes('data-agent-id')).toBe('agent-1')
+    expect(wrapper.find('img').exists()).toBe(false)
+
+    await agentButtons[1].trigger('mouseenter')
+    await agentButtons[1].trigger('mouseleave')
+    expect(headerAvatar().attributes('data-agent-id')).toBe('agent-2')
+    expect(wrapper.find('img').exists()).toBe(false)
 
     await agentButtons[0].trigger('click')
     expect(agentStore.setSelectedAgent).toHaveBeenCalledWith('agent-1')
