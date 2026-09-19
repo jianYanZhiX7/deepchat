@@ -309,9 +309,6 @@
       }
     }
   },
-  "newThread": {
-    "title": "Costruisci ed esplora"
-  },
   "floatingWidget": {
     "title": "Panoramica attività",
     "collapse": "Comprimi elenco sessioni flottante",

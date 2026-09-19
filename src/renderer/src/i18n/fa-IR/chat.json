@@ -306,9 +306,6 @@
     "noopDescription": "هنوز تاریخچه گفت وگوی جدیدی برای فشرده سازی وجود ندارد.",
     "failedTitle": "فشرده سازی ناموفق بود"
   },
-  "newThread": {
-    "title": "بسازید و کاوش کنید"
-  },
   "permissionMode": {
     "default": "مجوزهای پیش‌فرض",
     "fullAccess": "دسترسی کامل",

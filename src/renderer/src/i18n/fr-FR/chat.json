@@ -306,9 +306,6 @@
     "noopDescription": "Il n'y a pas encore de nouvel historique de conversation à compacter.",
     "failedTitle": "Échec de la compaction"
   },
-  "newThread": {
-    "title": "Créer et explorer"
-  },
   "permissionMode": {
     "default": "Autorisations par défaut",
     "fullAccess": "Accès complet",

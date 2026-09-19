@@ -394,9 +394,6 @@
       }
     }
   },
-  "newThread": {
-    "title": "构建与探索"
-  },
   "floatingWidget": {
     "title": "任务总览",
     "collapse": "收起悬浮会话列表",

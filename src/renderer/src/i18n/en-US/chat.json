@@ -394,9 +394,6 @@
       }
     }
   },
-  "newThread": {
-    "title": "Build and explore"
-  },
   "floatingWidget": {
     "title": "Task Overview",
     "collapse": "Collapse floating sessions",

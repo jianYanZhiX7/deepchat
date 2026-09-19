@@ -1,6 +1,7 @@
 import { mount, flushPromises } from '@vue/test-utils'
-import { reactive } from 'vue'
+import { nextTick, reactive } from 'vue'
 import { describe, expect, it, vi } from 'vitest'
+import { resolveAgentTaglines } from '@/lib/agentTaglines'
 
 const setup = async (
   pendingModelId: string,
@@ -84,7 +85,14 @@ const setup = async (
   const agentStore = reactive({
     selectedAgentId: 'deepchat',
     selectedAgent: null,
-    agents: [{ id: 'deepchat', type: 'deepchat' }]
+    agents: [{ id: 'deepchat', name: 'DeepChat', type: 'deepchat' }] as Array<{
+      id: string
+      name: string
+      type: string
+    }>
+  })
+  const pageRouterStore = reactive({
+    newThreadRefreshKey: 0
   })
   const getChatSelectableModelGroups = () => modelStore.enabledModels
   const modelStore = reactive({
@@ -160,6 +168,9 @@ const setup = async (
   vi.doMock('@/stores/ui/agent', () => ({
     useAgentStore: () => agentStore
   }))
+  vi.doMock('@/stores/ui/pageRouter', () => ({
+    usePageRouterStore: () => pageRouterStore
+  }))
   vi.doMock('@/stores/modelStore', () => ({
     useModelStore: () => modelStore
   }))
@@ -203,6 +214,12 @@ const setup = async (
     useI18n: () => ({
       t: (key: string) => key
     })
+  }))
+  vi.doMock('pinia', () => ({
+    createPinia: vi.fn(() => ({})),
+    defineStore: vi.fn(() => vi.fn(() => ({}))),
+    getActivePinia: vi.fn(() => null),
+    storeToRefs: vi.fn((store) => store)
   }))
   vi.doMock('@iconify/vue', () => ({
     Icon: {
@@ -262,7 +279,9 @@ const setup = async (
     draftStore,
     projectStore,
     sessionStore,
-    modelStore
+    modelStore,
+    agentStore,
+    pageRouterStore
   }
 }
 
@@ -415,5 +434,31 @@ describe('NewThreadPage start deeplink prefill', () => {
     await flushPromises()
 
     expect(sessionStore.createSession).toHaveBeenCalledTimes(2)
+  }, 20000)
+
+  it('shows a tagline of the selected agent and refreshes it for a new thread', async () => {
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0)
+    const { wrapper, agentStore, pageRouterStore } = await setup('deepseek-chat')
+
+    try {
+      const heading = () => wrapper.get('[data-testid="new-thread-tagline"]').text()
+      expect(resolveAgentTaglines('deepchat')).toContain(heading())
+
+      agentStore.agents.push({ id: 'deepchat-code-expert', name: '代码专家', type: 'deepchat' })
+      agentStore.selectedAgentId = 'deepchat-code-expert'
+      await nextTick()
+
+      expect(resolveAgentTaglines('deepchat-code-expert')).toContain(heading())
+
+      randomSpy.mockReturnValue(0.99)
+      pageRouterStore.newThreadRefreshKey += 1
+      await nextTick()
+
+      const refreshed = heading()
+      expect(resolveAgentTaglines('deepchat-code-expert')).toContain(refreshed)
+      expect(refreshed).not.toBe(resolveAgentTaglines('deepchat-code-expert')[0])
+    } finally {
+      randomSpy.mockRestore()
+    }
   }, 20000)
 })

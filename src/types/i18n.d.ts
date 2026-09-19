@@ -898,6 +898,7 @@ declare module 'vue-i18n' {
           description: string
           button: string
         }
+        openFolder: string
         contextMenu: {
           openFile: string
           revealInFolder: string
@@ -948,9 +949,6 @@ declare module 'vue-i18n' {
           aborted: string
         }
       }
-    }
-    newThread: {
-      title: string
     }
     floatingWidget: {
       title: string

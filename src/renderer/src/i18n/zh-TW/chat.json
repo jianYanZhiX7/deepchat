@@ -306,9 +306,6 @@
       "title": "固定技能"
     }
   },
-  "newThread": {
-    "title": "建構與探索"
-  },
   "permissionMode": {
     "default": "預設權限",
     "fullAccess": "完全存取",

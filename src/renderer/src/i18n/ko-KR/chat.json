@@ -306,9 +306,6 @@
     "noopDescription": "아직 압축할 새 대화 기록이 없습니다.",
     "failedTitle": "압축 실패"
   },
-  "newThread": {
-    "title": "만들고 탐색하기"
-  },
   "permissionMode": {
     "default": "기본 권한",
     "fullAccess": "전체 접근",

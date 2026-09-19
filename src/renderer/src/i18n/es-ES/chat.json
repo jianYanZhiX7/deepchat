@@ -309,9 +309,6 @@
       }
     }
   },
-  "newThread": {
-    "title": "Construir y explorar"
-  },
   "floatingWidget": {
     "title": "Resumen de tareas",
     "collapse": "Contraer lista flotante de sesiones",

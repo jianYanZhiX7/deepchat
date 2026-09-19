@@ -17,8 +17,8 @@
         </div>
 
         <!-- Heading -->
-        <h1 class="text-3xl font-semibold text-foreground mb-4">
-          {{ t('chat.newThread.title') }}
+        <h1 data-testid="new-thread-tagline" class="text-3xl font-semibold text-foreground mb-4">
+          {{ newThreadTagline }}
         </h1>
 
         <!-- Project selector -->
@@ -196,6 +196,7 @@ import { notifyRenderer } from '@renderer-notifications/rendererNotificationPort
 import { useProjectStore } from '@/stores/ui/project'
 import { useSessionStore } from '@/stores/ui/session'
 import { useAgentStore } from '@/stores/ui/agent'
+import { usePageRouterStore } from '@/stores/ui/pageRouter'
 import { useModelStore } from '@/stores/modelStore'
 import { useDraftStore, type StartDeeplinkPayload } from '@/stores/ui/draft'
 import { createConfigClient } from '@api/ConfigClient'
@@ -227,10 +228,12 @@ import { isAbortError } from '@/lib/errors'
 import { isAttachmentPreparationCandidate } from '@shared/utils/attachmentRepresentation'
 import { useSpeechRecognition } from '@/components/chat/composables/useSpeechRecognition'
 import { cancelChatInputHeroFlight, prepareChatInputHeroFlight } from '@/lib/chatInputHero'
+import { pickAgentTagline } from '@/lib/agentTaglines'
 
 const projectStore = useProjectStore()
 const sessionStore = useSessionStore()
 const agentStore = useAgentStore()
+const pageRouter = usePageRouterStore()
 const modelStore = useModelStore()
 const draftStore = useDraftStore()
 const configClient = createConfigClient()
@@ -378,6 +381,11 @@ const selectedAgent = computed(() => {
 })
 const isAcpSelectedAgent = computed(() => selectedAgent.value.type === 'acp')
 const isDeepChatSelectedAgent = computed(() => selectedAgent.value.type === 'deepchat')
+const newThreadTagline = ref(pickAgentTagline(selectedAgent.value.id))
+
+watch([() => selectedAgent.value.id, () => pageRouter.newThreadRefreshKey], () => {
+  newThreadTagline.value = pickAgentTagline(selectedAgent.value.id, newThreadTagline.value)
+})
 const composerSupportsVision = computed<boolean | null>(() => {
   if (
     isAcpSelectedAgent.value ||

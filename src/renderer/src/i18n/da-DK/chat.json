@@ -306,9 +306,6 @@
     "noopDescription": "Der er endnu ingen ny samtalehistorik at komprimere.",
     "failedTitle": "Komprimering mislykkedes"
   },
-  "newThread": {
-    "title": "Byg og udforsk"
-  },
   "permissionMode": {
     "default": "Standardtilladelser",
     "fullAccess": "Fuld adgang",

@@ -309,9 +309,6 @@
       }
     }
   },
-  "newThread": {
-    "title": "Bauen und erkunden"
-  },
   "floatingWidget": {
     "title": "Aufgabenübersicht",
     "collapse": "Schwebende Sitzungsliste einklappen",

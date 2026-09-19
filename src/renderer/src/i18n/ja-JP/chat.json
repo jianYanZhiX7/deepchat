@@ -306,9 +306,6 @@
     "noopDescription": "まだ圧縮できる新しい会話履歴がありません。",
     "failedTitle": "圧縮に失敗しました"
   },
-  "newThread": {
-    "title": "作成して探索"
-  },
   "permissionMode": {
     "default": "デフォルト権限",
     "fullAccess": "フルアクセス",
