@@ -10,6 +10,7 @@ supportedArchitectures:
     - glibc
 publicHoistPattern:
   - "@img/sharp-*"
+  - "@duckdb/node-bindings-*"
 allowBuilds:
   "@zerob13/nativekit": false
   "@parcel/watcher": false
