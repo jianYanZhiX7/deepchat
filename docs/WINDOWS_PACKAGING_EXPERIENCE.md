@@ -78,7 +78,6 @@ node scripts/fetch-acp-registry.mjs
 ```bash
 node scripts/install-runtime.mjs --platform win32 --arch x64   # uv / node v24.14.1 / rtk
 node scripts/installVss.js --platform win32 --arch x64         # DuckDB VSS 扩展
-node scripts/preinstall-acp-npm-cache.mjs                      # ACP npm 缓存预填充
 ```
 
 `afterPack.js` 会对 `runtime/node` 做 sha256 校验,上述脚本产出的 runtime 已通过校验。
@@ -144,7 +143,6 @@ node scripts/fetch-acp-registry.mjs
 # 运行时(按需解除守卫)
 node scripts/install-runtime.mjs --platform win32 --arch x64
 node scripts/installVss.js --platform win32 --arch x64
-node scripts/preinstall-acp-npm-cache.mjs
 # 插件
 node scripts/plugin.mjs bundle --name cua --platform win32 --arch x64
 node scripts/plugin.mjs bundle --name feishu --platform win32 --arch x64

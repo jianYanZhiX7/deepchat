@@ -114,6 +114,75 @@ function getOpendalNativePackages(platform, arch) {
   }
 }
 
+function getDuckDbNativePackages(platform, arch) {
+  const archName = getArchName(arch)
+
+  if (platform === 'darwin' && archName === 'universal') {
+    return ['@duckdb/node-bindings-darwin-x64', '@duckdb/node-bindings-darwin-arm64']
+  }
+
+  switch (`${platform}:${archName}`) {
+    case 'darwin:x64':
+      return ['@duckdb/node-bindings-darwin-x64']
+    case 'darwin:arm64':
+      return ['@duckdb/node-bindings-darwin-arm64']
+    case 'win32:x64':
+      return ['@duckdb/node-bindings-win32-x64']
+    case 'win32:arm64':
+      return ['@duckdb/node-bindings-win32-arm64']
+    case 'linux:x64':
+      return ['@duckdb/node-bindings-linux-x64']
+    case 'linux:arm64':
+      return ['@duckdb/node-bindings-linux-arm64']
+    default:
+      return []
+  }
+}
+
+function getSharpLibvipsPackages(platform, arch) {
+  const archName = getArchName(arch)
+
+  if (platform === 'darwin' && archName === 'universal') {
+    return ['@img/sharp-libvips-darwin-x64', '@img/sharp-libvips-darwin-arm64']
+  }
+
+  switch (`${platform}:${archName}`) {
+    case 'darwin:x64':
+      return ['@img/sharp-libvips-darwin-x64']
+    case 'darwin:arm64':
+      return ['@img/sharp-libvips-darwin-arm64']
+    case 'linux:x64':
+      return ['@img/sharp-libvips-linux-x64']
+    case 'linux:arm64':
+      return ['@img/sharp-libvips-linux-arm64']
+    default:
+      return []
+  }
+}
+
+function getFfiRsNativePackages(platform, arch) {
+  const archName = getArchName(arch)
+
+  switch (`${platform}:${archName}`) {
+    case 'darwin:x64':
+      return ['@yuuang/ffi-rs-darwin-x64']
+    case 'darwin:arm64':
+      return ['@yuuang/ffi-rs-darwin-arm64']
+    case 'win32:x64':
+      return ['@yuuang/ffi-rs-win32-x64-msvc']
+    case 'win32:arm64':
+      return ['@yuuang/ffi-rs-win32-arm64-msvc']
+    case 'win32:ia32':
+      return ['@yuuang/ffi-rs-win32-ia32-msvc']
+    case 'linux:x64':
+      return ['@yuuang/ffi-rs-linux-x64-gnu']
+    case 'linux:arm64':
+      return ['@yuuang/ffi-rs-linux-arm64-gnu']
+    default:
+      return []
+  }
+}
+
 async function pathExists(filePath) {
   try {
     await fs.access(filePath)
@@ -791,6 +860,106 @@ export async function packageLightOcrAssets(context) {
   })
 }
 
+const SUPPORTED_PRUNE_TARGETS = new Set([
+  'darwin:x64',
+  'darwin:arm64',
+  'darwin:universal',
+  'win32:x64',
+  'win32:arm64',
+  'win32:ia32',
+  'linux:x64',
+  'linux:arm64',
+  'linux:armv7l'
+])
+
+const NATIVE_PACKAGE_SCOPES = [
+  {
+    segments: ['@duckdb'],
+    pattern: /^node-bindings-/,
+    resolveKeep: getDuckDbNativePackages
+  },
+  {
+    segments: ['@opendal'],
+    pattern: /^lib-/,
+    resolveKeep: getOpendalNativePackages
+  },
+  {
+    segments: ['@img'],
+    pattern: /^sharp-libvips-/,
+    resolveKeep: getSharpLibvipsPackages,
+    keepEmptyDeletesAll: true
+  },
+  {
+    segments: ['@ff-labs'],
+    pattern: /^fff-bin-/,
+    resolveKeep: getFffBinaryPackages
+  },
+  {
+    segments: ['@parcel'],
+    pattern: /^watcher-/,
+    resolveKeep: getParcelWatcherBinaryPackages
+  },
+  {
+    segments: ['@yuuang'],
+    pattern: /^ffi-rs-/,
+    resolveKeep: getFfiRsNativePackages
+  },
+  {
+    segments: ['@zerob13', 'nativekit', 'prebuilds'],
+    pattern: /./,
+    resolveKeep: getNativeKitPrebuilds
+  }
+]
+
+function toPackageEntryNames(packageNames) {
+  return new Set(packageNames.map((packageName) => packageName.split('/').pop()))
+}
+
+async function pruneScopeEntries(scopeDir, pattern, keepNames, keepEmptyDeletesAll) {
+  if (keepNames.size === 0 && !keepEmptyDeletesAll) {
+    return
+  }
+
+  let entries = []
+  try {
+    entries = await fs.readdir(scopeDir, { withFileTypes: true })
+  } catch {
+    return
+  }
+
+  const foreignNames = entries
+    .filter((entry) => pattern.test(entry.name) && !keepNames.has(entry.name))
+    .map((entry) => entry.name)
+
+  if (foreignNames.length === 0) {
+    return
+  }
+
+  await Promise.all(
+    foreignNames.map((name) => fs.rm(path.join(scopeDir, name), { recursive: true, force: true }))
+  )
+  console.info(
+    `[afterPack] pruned ${foreignNames.length} foreign platform package(s) in ${scopeDir}: ${foreignNames.join(', ')}`
+  )
+}
+
+export async function pruneForeignPlatformPackages(context) {
+  const nodeModulesDir = path.join(getResourcesDir(context), 'app.asar.unpacked', 'node_modules')
+  const platform = context.electronPlatformName
+  const arch = context.arch
+  const target = `${platform}:${getArchName(arch)}`
+  const isSupportedTarget = SUPPORTED_PRUNE_TARGETS.has(target)
+
+  for (const { segments, pattern, resolveKeep, keepEmptyDeletesAll } of NATIVE_PACKAGE_SCOPES) {
+    await pruneScopeEntries(
+      path.join(nodeModulesDir, ...segments),
+      pattern,
+      toPackageEntryNames(resolveKeep(platform, arch)),
+      keepEmptyDeletesAll === true && isSupportedTarget
+    )
+  }
+}
+
 function isLinux(targets) {
   const re = /AppImage|snap|deb|rpm|freebsd|pacman/i
   return !!targets.find((target) => re.test(target.name))
@@ -838,6 +1007,7 @@ async function afterPack(context) {
   await copyOpendalNativePackages(context)
   await packageLightOcrAssets(context)
   await validateNativeKitPrebuilds(context)
+  await pruneForeignPlatformPackages(context)
   await encodeMacVssExtension(context)
 
   if (isLinux(targets)) {

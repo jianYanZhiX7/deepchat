@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdir, mkdtemp, readFile, rm, stat, symlink, writeFile } from 'fs/promises'
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, symlink, writeFile } from 'fs/promises'
 import os from 'os'
 import path from 'path'
 import { gunzipSync } from 'zlib'
@@ -1099,5 +1099,280 @@ describe('afterPack', () => {
         packager: { projectDir }
       })
     ).rejects.toThrow('DeepChat must depend on exactly @arcships/light-ocr@0.5.6')
+  })
+})
+
+const loadPruneForeignPlatformPackages = async () =>
+  (await import('../../../scripts/afterPack.js')).pruneForeignPlatformPackages as (context: {
+    appOutDir: string
+    electronPlatformName: string
+    arch?: number | string
+    packager?: { appInfo?: { productFilename?: string } }
+  }) => Promise<void>
+
+const NATIVE_PACKAGE_FIXTURES = {
+  '@duckdb': [
+    'node-api',
+    'node-bindings',
+    'node-bindings-darwin-x64',
+    'node-bindings-darwin-arm64',
+    'node-bindings-linux-x64',
+    'node-bindings-linux-x64-musl',
+    'node-bindings-linux-arm64',
+    'node-bindings-linux-arm64-musl',
+    'node-bindings-win32-x64',
+    'node-bindings-win32-arm64'
+  ],
+  '@opendal': [
+    'lib-darwin-x64',
+    'lib-darwin-arm64',
+    'lib-linux-x64-gnu',
+    'lib-linux-x64-musl',
+    'lib-linux-arm64-gnu',
+    'lib-linux-arm64-musl',
+    'lib-win32-x64-msvc',
+    'lib-win32-arm64-msvc'
+  ],
+  '@img': [
+    'colour',
+    'sharp-webcontainers-wasm32',
+    'sharp-darwin-x64',
+    'sharp-darwin-arm64',
+    'sharp-linux-x64',
+    'sharp-linux-arm64',
+    'sharp-linuxmusl-x64',
+    'sharp-linuxmusl-arm64',
+    'sharp-win32-x64',
+    'sharp-win32-arm64',
+    'sharp-win32-ia32',
+    'sharp-libvips-darwin-x64',
+    'sharp-libvips-darwin-arm64',
+    'sharp-libvips-linux-x64',
+    'sharp-libvips-linux-arm64',
+    'sharp-libvips-linuxmusl-x64',
+    'sharp-libvips-linuxmusl-arm64'
+  ],
+  '@ff-labs': [
+    'fff-node',
+    'fff-bin-darwin-x64',
+    'fff-bin-darwin-arm64',
+    'fff-bin-linux-x64-gnu',
+    'fff-bin-linux-x64-musl',
+    'fff-bin-linux-arm64-gnu',
+    'fff-bin-linux-arm64-musl',
+    'fff-bin-win32-x64',
+    'fff-bin-win32-arm64'
+  ],
+  '@parcel': [
+    'watcher',
+    'watcher-darwin-x64',
+    'watcher-darwin-arm64',
+    'watcher-linux-x64-glibc',
+    'watcher-linux-x64-musl',
+    'watcher-linux-arm64-glibc',
+    'watcher-linux-arm64-musl',
+    'watcher-win32-x64',
+    'watcher-win32-arm64'
+  ],
+  '@yuuang': [
+    'ffi-rs-darwin-x64',
+    'ffi-rs-darwin-arm64',
+    'ffi-rs-linux-x64-gnu',
+    'ffi-rs-linux-x64-musl',
+    'ffi-rs-linux-arm64-gnu',
+    'ffi-rs-linux-arm64-musl',
+    'ffi-rs-win32-x64-msvc',
+    'ffi-rs-win32-arm64-msvc',
+    'ffi-rs-win32-ia32-msvc'
+  ]
+}
+
+const NATIVE_PREBUILD_FIXTURES = ['darwin-x64', 'darwin-arm64', 'linux-x64', 'linux-arm64', 'win32-x64']
+
+const seedForeignPlatformFixtures = async (nodeModulesDir: string) => {
+  for (const [scope, names] of Object.entries(NATIVE_PACKAGE_FIXTURES)) {
+    for (const name of names) {
+      await mkdir(path.join(nodeModulesDir, ...scope.split('/'), name), { recursive: true })
+    }
+  }
+  for (const prebuild of NATIVE_PREBUILD_FIXTURES) {
+    await mkdir(path.join(nodeModulesDir, '@zerob13', 'nativekit', 'prebuilds', prebuild), {
+      recursive: true
+    })
+  }
+}
+
+const readScopeEntries = async (nodeModulesDir: string, scopeSegments: string[]) =>
+  (await readdir(path.join(nodeModulesDir, ...scopeSegments))).sort()
+
+describe('pruneForeignPlatformPackages', () => {
+  let tmpDir: string
+
+  beforeEach(async () => {
+    vi.resetModules()
+    tmpDir = await mkdtemp(path.join(os.tmpdir(), 'deepchat-prune-'))
+  })
+
+  afterEach(async () => {
+    await rm(tmpDir, { recursive: true, force: true })
+  })
+
+  const seedMacNodeModules = async () => {
+    const nodeModulesDir = path.join(
+      tmpDir,
+      'DeepChat.app',
+      'Contents',
+      'Resources',
+      'app.asar.unpacked',
+      'node_modules'
+    )
+    await seedForeignPlatformFixtures(nodeModulesDir)
+    return nodeModulesDir
+  }
+
+  const seedFlatNodeModules = async () => {
+    const nodeModulesDir = path.join(tmpDir, 'resources', 'app.asar.unpacked', 'node_modules')
+    await seedForeignPlatformFixtures(nodeModulesDir)
+    return nodeModulesDir
+  }
+
+  const readPrebuilds = (nodeModulesDir: string) =>
+    readScopeEntries(nodeModulesDir, ['@zerob13', 'nativekit', 'prebuilds'])
+
+  it('keeps only darwin arm64 native packages on macOS arm64', async () => {
+    const pruneForeignPlatformPackages = await loadPruneForeignPlatformPackages()
+    const nodeModulesDir = await seedMacNodeModules()
+
+    await pruneForeignPlatformPackages({
+      appOutDir: tmpDir,
+      electronPlatformName: 'darwin',
+      arch: 3
+    })
+
+    await expect(readScopeEntries(nodeModulesDir, ['@duckdb'])).resolves.toEqual([
+      'node-api',
+      'node-bindings',
+      'node-bindings-darwin-arm64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@opendal'])).resolves.toEqual([
+      'lib-darwin-arm64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@ff-labs'])).resolves.toEqual([
+      'fff-bin-darwin-arm64',
+      'fff-node'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@parcel'])).resolves.toEqual([
+      'watcher',
+      'watcher-darwin-arm64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@yuuang'])).resolves.toEqual([
+      'ffi-rs-darwin-arm64'
+    ])
+
+    const imgEntries = await readScopeEntries(nodeModulesDir, ['@img'])
+    expect(imgEntries).toContain('sharp-libvips-darwin-arm64')
+    expect(imgEntries).toContain('sharp-webcontainers-wasm32')
+    expect(imgEntries).not.toContain('sharp-libvips-darwin-x64')
+    expect(imgEntries).not.toContain('sharp-libvips-linux-x64')
+
+    await expect(readPrebuilds(nodeModulesDir)).resolves.toEqual(['darwin-arm64'])
+  })
+
+  it('keeps msvc native packages on Windows x64', async () => {
+    const pruneForeignPlatformPackages = await loadPruneForeignPlatformPackages()
+    const nodeModulesDir = await seedFlatNodeModules()
+
+    await pruneForeignPlatformPackages({
+      appOutDir: tmpDir,
+      electronPlatformName: 'win32',
+      arch: 'x64'
+    })
+
+    await expect(readScopeEntries(nodeModulesDir, ['@duckdb'])).resolves.toEqual([
+      'node-api',
+      'node-bindings',
+      'node-bindings-win32-x64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@opendal'])).resolves.toEqual([
+      'lib-win32-x64-msvc'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@ff-labs'])).resolves.toEqual([
+      'fff-bin-win32-x64',
+      'fff-node'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@parcel'])).resolves.toEqual([
+      'watcher',
+      'watcher-win32-x64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@yuuang'])).resolves.toEqual([
+      'ffi-rs-win32-x64-msvc'
+    ])
+
+    const imgEntries = await readScopeEntries(nodeModulesDir, ['@img'])
+    expect(imgEntries).toContain('sharp-win32-x64')
+    expect(imgEntries).not.toContain('sharp-libvips-darwin-arm64')
+    expect(imgEntries).not.toContain('sharp-libvips-linux-x64')
+    expect(imgEntries).not.toContain('sharp-libvips-linuxmusl-x64')
+
+    await expect(readPrebuilds(nodeModulesDir)).resolves.toEqual(['win32-x64'])
+  })
+
+  it('keeps glibc native packages and drops musl variants on Linux x64', async () => {
+    const pruneForeignPlatformPackages = await loadPruneForeignPlatformPackages()
+    const nodeModulesDir = await seedFlatNodeModules()
+
+    await pruneForeignPlatformPackages({
+      appOutDir: tmpDir,
+      electronPlatformName: 'linux',
+      arch: 'x64'
+    })
+
+    await expect(readScopeEntries(nodeModulesDir, ['@duckdb'])).resolves.toEqual([
+      'node-api',
+      'node-bindings',
+      'node-bindings-linux-x64'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@opendal'])).resolves.toEqual([
+      'lib-linux-x64-gnu'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@ff-labs'])).resolves.toEqual([
+      'fff-bin-linux-x64-gnu',
+      'fff-node'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@parcel'])).resolves.toEqual([
+      'watcher',
+      'watcher-linux-x64-glibc'
+    ])
+    await expect(readScopeEntries(nodeModulesDir, ['@yuuang'])).resolves.toEqual([
+      'ffi-rs-linux-x64-gnu'
+    ])
+
+    const imgEntries = await readScopeEntries(nodeModulesDir, ['@img'])
+    expect(imgEntries).toContain('sharp-libvips-linux-x64')
+    expect(imgEntries).not.toContain('sharp-libvips-linuxmusl-x64')
+    expect(imgEntries).not.toContain('sharp-libvips-darwin-arm64')
+
+    await expect(readPrebuilds(nodeModulesDir)).resolves.toEqual(['linux-x64'])
+  })
+
+  it('leaves every native package untouched for an unsupported target', async () => {
+    const pruneForeignPlatformPackages = await loadPruneForeignPlatformPackages()
+    const nodeModulesDir = await seedFlatNodeModules()
+
+    await pruneForeignPlatformPackages({
+      appOutDir: tmpDir,
+      electronPlatformName: 'freebsd',
+      arch: 'x64'
+    })
+
+    await expect(readScopeEntries(nodeModulesDir, ['@duckdb'])).resolves.toEqual(
+      [...NATIVE_PACKAGE_FIXTURES['@duckdb']].sort()
+    )
+    await expect(readScopeEntries(nodeModulesDir, ['@img'])).resolves.toEqual(
+      [...NATIVE_PACKAGE_FIXTURES['@img']].sort()
+    )
+    await expect(readPrebuilds(nodeModulesDir)).resolves.toEqual(
+      [...NATIVE_PREBUILD_FIXTURES].sort()
+    )
   })
 })

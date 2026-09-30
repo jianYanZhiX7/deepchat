@@ -22,8 +22,7 @@ Examples:
 
 The script runs these steps in order:
   1. pnpm run installRuntime:<platform>:<arch>   (unless --skip-runtime)
-  2. pnpm run acp:cache
-  3. pnpm run build:<platform>:<arch>
+  2. pnpm run build:<platform>:<arch>
 EOF
 }
 
@@ -121,9 +120,6 @@ if [[ "$SKIP_RUNTIME" -eq 0 ]]; then
 else
   info "Skipping runtime install (--skip-runtime)"
 fi
-
-info "Pre-populating offline claude-acp npm cache"
-pnpm run acp:cache
 
 info "Building release (${BUILD_STEP})"
 pnpm run "$BUILD_STEP"
